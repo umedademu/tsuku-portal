@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: repoRoot,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "via.placeholder.com",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
