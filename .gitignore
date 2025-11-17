@@ -10,6 +10,9 @@ pnpm-debug.log*
 node_modules
 */node_modules
 
+# Legacy assets (do not track old site files)
+legacy/
+
 # Next.js
 .next
 out
