@@ -8,9 +8,21 @@ const navLinks = [
   { label: "専門家紹介", href: "#expert-profile" },
 ];
 const socialLinks = [
-  { label: "Instagram", href: "https://www.instagram.com/kensetusentai/" },
-  { label: "TikTok", href: "https://www.tiktok.com/@tsukurunja" },
-  { label: "LINE", href: "https://line.me/ti/p/~kensetusentai88612" },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/kensetusentai/",
+    icon: "fab fa-instagram",
+  },
+  {
+    label: "TikTok",
+    href: "https://www.tiktok.com/@tsukurunja",
+    icon: "fab fa-tiktok",
+  },
+  {
+    label: "LINE",
+    href: "https://line.me/ti/p/~kensetusentai88612",
+    icon: "fab fa-line",
+  },
 ];
 const stats = { remainingToday: 5, monthlyUsers: 128 };
 const features = [
@@ -96,9 +108,19 @@ export default function Home() {
       <header className="site-header">
         <div className="container">
           <div className="inner">
-            <a className="logo" href="#hero-cta-anchor">
-              {companyName}
-            </a>
+            <div className="social-links header-social-links">
+              {socialLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={link.label}
+                >
+                  <i className={link.icon} aria-hidden="true" />
+                </a>
+              ))}
+            </div>
             <div className="nav-area">
               <ul className="nav-menu">
                 {navLinks.map((link) => (
@@ -112,18 +134,6 @@ export default function Home() {
                   </a>
                 </li>
               </ul>
-              <div className="social-links">
-                {socialLinks.map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -135,7 +145,7 @@ export default function Home() {
           <div className="container">
             <div className="hero-content">
               <div className="system-badge">
-                <span aria-hidden="true">🧠</span>
+                <i className="fas fa-brain" aria-hidden="true" />
                 <span>Google最新AI「Gemini 2.5 Pro」搭載診断システム</span>
               </div>
               <h1>
@@ -149,17 +159,31 @@ export default function Home() {
                 します。
               </p>
               <div className="action-buttons">
-                <button type="button" className="btn btn-primary">
-                  事業者向け：リスク診断を開始
+                <button
+                  type="button"
+                  className="btn btn-primary specialist-btn"
+                  data-funnel="B2B"
+                  data-mode="B2B_アナリスト"
+                  id="cta-b2b"
+                >
+                  <i className="fas fa-building" aria-hidden="true" />
+                  <span>事業者向け：リスク診断を開始</span>
                 </button>
-                <button type="button" className="btn btn-secondary">
-                  個人向け：安心診断を開始
+                <button
+                  type="button"
+                  className="btn btn-secondary specialist-btn"
+                  data-funnel="B2C"
+                  data-mode="ゴールド"
+                  id="cta-b2c"
+                >
+                  <i className="fas fa-home" aria-hidden="true" />
+                  <span>個人向け：安心診断を開始</span>
                 </button>
               </div>
               <div className="urgency-bar">
-                <span>本日の無料診断受付 残り：</span>
+                本日の無料診断受付 残り：
                 <span className="highlight">{stats.remainingToday}</span>
-                <span>名</span>
+                名
               </div>
             </div>
           </div>
@@ -264,8 +288,9 @@ export default function Home() {
                     href={link.href}
                     target="_blank"
                     rel="noreferrer"
+                    aria-label={link.label}
                   >
-                    {link.label}
+                    <i className={link.icon} aria-hidden="true" />
                   </a>
                 ))}
               </div>

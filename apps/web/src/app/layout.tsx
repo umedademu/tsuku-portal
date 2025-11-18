@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
 
 const notoSans = Noto_Sans_JP({
