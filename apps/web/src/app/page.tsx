@@ -100,6 +100,30 @@ const office = {
   tel: "TEL: 042-000-0000",
 };
 
+type PlanKey = "blue" | "gold" | "green";
+const planOptions: { key: PlanKey; label: string; description: string }[] = [
+  {
+    key: "gold",
+    label: "GOLDプラン",
+    description: "多次元の整合確認を重ねる精緻プラン。",
+  },
+  {
+    key: "green",
+    label: "GREENプラン",
+    description: "外構・リフォーム寄りの暮らし重視プラン。",
+  },
+  {
+    key: "blue",
+    label: "BLUEプラン",
+    description: "構造安全とコストの優先検討プラン。",
+  },
+];
+const planLabelMap: Record<PlanKey, string> = {
+  blue: "BLUEプラン",
+  gold: "GOLDプラン",
+  green: "GREENプラン",
+};
+
 const formatLineBreaks = (text: string) => {
   const parts = text.split("\n");
   return parts.map((part, index) => (
@@ -129,6 +153,7 @@ export default function Home() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [submitStatus, setSubmitStatus] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("blue");
 
   useEffect(() => {
     document.body.style.overflow = chatOpen ? "hidden" : "";
@@ -151,6 +176,7 @@ export default function Home() {
     setCustomerEmail("");
     setCustomerPhone("");
     setSubmitStatus("");
+    setSelectedPlan("blue");
     setChatOpen(true);
   };
 
@@ -184,7 +210,7 @@ export default function Home() {
     setStatus("");
 
     try {
-      const planKey = "blue";
+      const planKey = selectedPlan;
 
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -476,7 +502,11 @@ export default function Home() {
                     : activeFunnel === "B2C"
                     ? "個人向け：安全診断"
                     : "診断モード未選択"}
+                  <span className="plan-chip">
+                    選択プラン: {planLabelMap[selectedPlan]}
+                  </span>
                 </p>
+
               </div>
               <button
                 type="button"
@@ -498,6 +528,31 @@ export default function Home() {
                       {selectedFile && (
                         <p className="chat-status">選択中: {selectedFile.name}</p>
                       )}
+                    </div>
+                    <div className="form-group">
+                      <label>プランを選択</label>
+                      <div className="plan-options">
+                        {planOptions.map((plan) => (
+                          <label
+                            key={plan.key}
+                            className={`plan-option ${selectedPlan === plan.key ? "selected" : ""}`}
+                          >
+                            <div className="plan-option-header">
+                              <input
+                                type="radio"
+                                name="plan"
+                                value={plan.key}
+                                checked={selectedPlan === plan.key}
+                                onChange={() => setSelectedPlan(plan.key)}
+                              />
+                              <span className="plan-name">{plan.label}</span>
+                            </div>
+                            <p className="plan-description">
+                              {plan.description}
+                            </p>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="initialMessage">初期メッセージ</label>

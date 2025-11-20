@@ -581,6 +581,50 @@ img {
   font-family: inherit;
 }
 
+.plan-options {
+  display: grid;
+  gap: 10px;
+}
+
+.plan-option {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.plan-option.selected {
+  border-color: var(--color-accent-gold);
+  background: #fffdf3;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.plan-option-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.plan-option input {
+  width: 18px;
+  height: 18px;
+}
+
+.plan-name {
+  font-weight: 700;
+}
+
+.plan-description {
+  margin: 4px 0 0;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
 .chat-section {
   background: linear-gradient(135deg, #f9fafb 0%, #eef2ff 100%);
 }
@@ -613,6 +657,18 @@ img {
   margin: 0;
   font-weight: 700;
   color: var(--color-primary-dark);
+}
+
+.plan-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.9rem;
 }
 
 .chat-funnel {
