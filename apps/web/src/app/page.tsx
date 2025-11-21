@@ -263,7 +263,7 @@ export default function Home() {
     if (!body || loading) return;
 
     if (selectedFile && !selectedFileData) {
-      setStatus("�t�@�C���̓ǂݍ��݂��҂��Ă��������B");
+      setStatus("ファイルを読み込み中です...");
       return;
     }
 
@@ -387,18 +387,8 @@ export default function Home() {
       <header className="site-header">
         <div className="container">
           <div className="inner">
-            <div className="social-links header-social-links">
-              {socialLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={link.label}
-                >
-                  <i className={link.icon} aria-hidden="true" />
-                </a>
-              ))}
+            <div className="logo">
+              <span className="text-blue-400">TSUKU</span>-PORTAL
             </div>
             <div className="nav-area">
               <ul className="nav-menu">
@@ -421,7 +411,7 @@ export default function Home() {
       <main className="main-content">
         <div id="hero-cta-anchor" />
         <section className="hero section">
-          <div className="container">
+          <div className="container animate-slide-up">
             <div className="hero-content">
               <div className="system-badge">
                 <i className="fas fa-brain" aria-hidden="true" />
@@ -429,6 +419,7 @@ export default function Home() {
               </div>
               <h1>
                 その見積もり内容、
+                <br />
                 <span className="highlight">本当に適正ですか？</span>
               </h1>
               <p>
@@ -440,7 +431,7 @@ export default function Home() {
               <div className="action-buttons">
                 <button
                   type="button"
-                  className="btn btn-primary specialist-btn"
+                  className="btn btn-primary specialist-btn delay-100 animate-slide-up"
                   data-funnel="B2B"
                   data-mode="B2B"
                   id="cta-b2b"
@@ -451,7 +442,7 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  className="btn btn-secondary specialist-btn"
+                  className="btn btn-secondary specialist-btn delay-200 animate-slide-up"
                   data-funnel="B2C"
                   data-mode="B2C"
                   id="cta-b2c"
@@ -461,7 +452,7 @@ export default function Home() {
                   <span>個人向け：安全診断を開始</span>
                 </button>
               </div>
-              <div className="urgency-bar">
+              <div className="urgency-bar delay-300 animate-slide-up">
                 本日の無料診断受付枠 残り
                 <span className="highlight">{stats.remainingToday}</span>
                 件
@@ -472,16 +463,16 @@ export default function Home() {
 
         <section className="section" id="why-ai">
           <div className="container">
-            <h2 className="section-title">セカンドオピニオンの重要性</h2>
-            <p className="section-subtitle">
+            <h2 className="section-title text-center">セカンドオピニオンの重要性</h2>
+            <p className="section-subtitle text-center">
               建設業界で見落とされがちな問題を、最新AI技術で解決します。
               <br />
-              今月、<span className="highlight">{stats.monthlyUsers}</span>
+              今月、<span className="highlight text-amber-400 font-bold">{stats.monthlyUsers}</span>
               名がこの診断を利用しました。
             </p>
             <div className="features-grid">
-              {features.map((feature) => (
-                <div className="feature-card" key={feature.title}>
+              {features.map((feature, idx) => (
+                <div className={`feature-card animate-slide-up delay-${(idx + 1) * 100}`} key={feature.title}>
                   <div className="feature-icon" aria-hidden="true">
                     {feature.icon}
                   </div>
@@ -495,13 +486,13 @@ export default function Home() {
 
         <section className="section expert-section" id="expert-profile">
           <div className="container">
-            <h2 className="section-title">専門家紹介</h2>
-            <div className="expert-profile">
+            <h2 className="section-title text-center">専門家紹介</h2>
+            <div className="expert-profile animate-slide-up">
               <div className="expert-image">
                 <Image
-                  src="https://via.placeholder.com/220x240.png?text=Profile"
+                  src="/expert.png"
                   alt="専門家の写真"
-                  width={220}
+                  width={240}
                   height={240}
                   className="profile-photo"
                 />
@@ -525,10 +516,10 @@ export default function Home() {
 
         <section className="section works-section" id="works">
           <div className="container">
-            <h2 className="section-title">施工事例</h2>
+            <h2 className="section-title text-center">施工事例</h2>
             <div className="works-grid">
-              {caseStudies.map((study) => (
-                <article className="work-card" key={study.title}>
+              {caseStudies.map((study, idx) => (
+                <article className={`work-card animate-slide-up delay-${(idx + 1) * 100}`} key={study.title}>
                   <p className="work-meta">
                     {study.date} | {study.region}
                   </p>
@@ -543,7 +534,7 @@ export default function Home() {
 
         <section className="section seo-links-section">
           <div className="container">
-            <h3 className="section-title">対応キーワード</h3>
+            <h3 className="section-title text-center mb-8 text-xl">対応キーワード</h3>
             <div className="keyword-cloud">
               {regionKeywords.map((keyword) => (
                 <span className="keyword-pill" key={keyword}>
@@ -589,13 +580,13 @@ export default function Home() {
             <div className="footer-section">
               <h4>関連リンク</h4>
               <ul>
-                <li>プライバシーポリシー</li>
-                <li>XMLサイトマップ</li>
+                <li><a href="#">プライバシーポリシー</a></li>
+                <li><a href="#">XMLサイトマップ</a></li>
               </ul>
             </div>
           </div>
           <p className="footer-note">
-            c {new Date().getFullYear()} {companyName}
+            © {new Date().getFullYear()} {companyName}
           </p>
         </div>
       </footer>
