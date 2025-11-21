@@ -6,6 +6,7 @@ import {
   type ReactNode,
   useEffect,
   useState,
+  useRef,
   type ChangeEvent,
   type FormEvent,
 } from "react";
@@ -101,6 +102,7 @@ const office = {
   tel: "TEL: 042-000-0000",
 };
 
+type Stage = "initial" | "chat" | "inquiry";
 type PlanKey = "blue" | "gold" | "green";
 const planOptions: { key: PlanKey; label: string; description: string }[] = [
   {
@@ -145,6 +147,24 @@ type GeminiHistoryPayload = {
 };
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
+
+const stageSteps: { key: Stage; title: string; description: string }[] = [
+  {
+    key: "initial",
+    title: "準備",
+    description: "資料の確認とプラン設定",
+  },
+  {
+    key: "chat",
+    title: "AIチャット",
+    description: "要望を整理して下書き作成",
+  },
+  {
+    key: "inquiry",
+    title: "送信",
+    description: "連絡先を入力して送信",
+  },
+];
 
 const formatLineBreaks = (text: string) => {
   const parts = text.split("\n");
@@ -227,7 +247,7 @@ const splitChatBlocks = (rawText: string): ChatBlock[] => {
 
   const blocks: ChatBlock[] = [];
 
-  for (let i = 0; i < lines.length; ) {
+  for (let i = 0; i < lines.length;) {
     const line = lines[i];
 
     if (line === "---") {
@@ -343,9 +363,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const [stage, setStage] = useState<"initial" | "chat" | "inquiry">(
-    "initial",
-  );
+  const [stage, setStage] = useState<Stage>("initial");
   const [initialMessage, setInitialMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileData, setSelectedFileData] = useState<FileData | null>(
@@ -356,7 +374,33 @@ export default function Home() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [submitStatus, setSubmitStatus] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("blue");
+
+  const [isDragging, setIsDragging] = useState(false);
+
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("green");
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, loading]);
+
+  const currentStageIndex = Math.max(
+    stageSteps.findIndex((step) => step.key === stage),
+    0,
+  );
+  const chatHintText = loading
+    ? "AIが整理中です。少しお待ちください。"
+    : messages.length === 0
+      ? "箇条書きでもOKです。まずは困りごとを短く送ってください。"
+      : "追記したいポイントを1文ずつ送ると整理が早くなります。";
+  const funnelLabel =
+    activeFunnel === "B2B"
+      ? "事業者向け：リスク診断"
+      : activeFunnel === "B2C"
+        ? "個人向け：安全診断"
+        : "診断モード未選択";
 
   useEffect(() => {
     document.body.style.overflow = chatOpen ? "hidden" : "";
@@ -380,7 +424,7 @@ export default function Home() {
     setCustomerEmail("");
     setCustomerPhone("");
     setSubmitStatus("");
-    setSelectedPlan("blue");
+    setSelectedPlan("green");
     setChatOpen(true);
   };
 
@@ -463,6 +507,48 @@ export default function Home() {
       setSelectedFileData(null);
       return;
     }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setStatus("ファイルは8MB以下にしてください。");
+      setSelectedFile(null);
+      setSelectedFileData(null);
+      return;
+    }
+
+    setSelectedFile(file);
+    try {
+      const base64 = await readFileAsBase64(file);
+      setSelectedFileData({
+        name: file.name,
+        base64,
+        mimeType: file.type || "application/octet-stream",
+      });
+    } catch (error) {
+      console.error("file read error", error);
+      setStatus("ファイルの読み込みに失敗しました。もう一度お試しください。");
+      setSelectedFile(null);
+      setSelectedFileData(null);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0] || null;
+    setStatus("");
+
+    if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
       setStatus("ファイルは8MB以下にしてください。");
@@ -745,11 +831,7 @@ export default function Home() {
               <div>
                 <p className="chat-label">AIチャット診断</p>
                 <p className="chat-plan">
-                  {activeFunnel === "B2B"
-                    ? "事業者向け：リスク診断"
-                    : activeFunnel === "B2C"
-                      ? "個人向け：安全診断"
-                      : "診断モード未選択"}
+                  {funnelLabel}
                   <span className="plan-chip">
                     選択プラン: {planLabelMap[selectedPlan]}
                   </span>
@@ -766,175 +848,280 @@ export default function Home() {
               </button>
             </div>
             <div className="chat-modal-body">
-              <div className="chat-card">
-                {stage === "initial" && (
-                  <div className="chat-stage">
-                    <p className="chat-label">ステップ1：情報入力</p>
-                    <div className="form-group">
-                      <label>資料をアップロード（任意）</label>
-                      <input type="file" onChange={handleFileChange} />
-                      {selectedFile && (
-                        <p className="chat-status">選択中: {selectedFile.name}</p>
-                      )}
-                    </div>
-                    <div className="form-group">
-                      <label>プランを選択</label>
-                      <div className="plan-options">
-                        {planOptions.map((plan) => (
-                          <label
-                            key={plan.key}
-                            className={`plan-option ${selectedPlan === plan.key ? "selected" : ""}`}
-                          >
-                            <div className="plan-option-header">
-                              <input
-                                type="radio"
-                                name="plan"
-                                value={plan.key}
-                                checked={selectedPlan === plan.key}
-                                onChange={() => setSelectedPlan(plan.key)}
-                              />
-                              <span className="plan-name">{plan.label}</span>
-                            </div>
-                            <p className="plan-description">
-                              {plan.description}
-                            </p>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="initialMessage">初期メッセージ</label>
-                      <textarea
-                        id="initialMessage"
-                        value={initialMessage}
-                        onChange={(e) => setInitialMessage(e.target.value)}
-                        rows={3}
-                        placeholder="図面や見積の状況、気になる点を具体的に書いてください。"
-                      />
-                    </div>
-                    <div className="chat-actions">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={startChatStage}
-                        disabled={loading}
-                      >
-                        AIチャットを開始
-                      </button>
-                      {status && <span className="chat-status">{status}</span>}
-                    </div>
-                  </div>
-                )}
-                {stage === "chat" && (
-                  <div className="chat-stage">
-                    <p className="chat-label">ステップ2：AIチャット診断</p>
-                    <div className="chat-messages">
-                      {messages.length === 0 ? (
-                        <div className="chat-empty">
-                          AIに質問を送るとここに回答が表示されます。工事内容や気になっているリスクを具体的に書いてください。
+              <div className="chat-top">
+                <div className="chat-progress">
+                  {stageSteps.map((step, index) => {
+                    const status =
+                      index < currentStageIndex
+                        ? "done"
+                        : index === currentStageIndex
+                          ? "active"
+                          : "next";
+                    return (
+                      <div className={`progress-step ${status}`} key={step.key}>
+                        <div className="step-circle">{index + 1}</div>
+                        <div className="step-text">
+                          <p className="step-title">{step.title}</p>
+                          <span className="step-desc">{step.description}</span>
                         </div>
-                      ) : (
-                        messages.map((msg, idx) => (
-                          <div
-                            key={`${msg.role}-${idx}-${msg.text.slice(0, 4)}`}
-                            className={`chat-message ${msg.role}`}
-                          >
-                            <div className="chat-meta">
-                              {msg.role === "user" ? "ユーザー" : "AI"}
+                      </div>
+                    );
+                  })}
+                </div>
+
+              </div>
+
+              <div className="chat-layout">
+                <div className="chat-main">
+                  <div className="chat-card">
+                    {stage === "initial" && (
+                      <div className="chat-stage">
+                        <div className="stage-lead">
+                          <h3 className="stage-title">最初に状況をまとめましょう</h3>
+                          <p className="stage-desc">
+                            図面や条件がわかる資料があれば添付。未定でも自由入力でOKです。
+                          </p>
+                        </div>
+                        <div className="stage-grid">
+                          <div className="form-group">
+                            <label>資料アップロード（任意）</label>
+                            <div
+                              className={`upload-area ${isDragging ? "dragging" : ""} ${selectedFile ? "has-file" : ""}`}
+                              onDragOver={handleDragOver}
+                              onDragLeave={handleDragLeave}
+                              onDrop={handleDrop}
+                              onClick={() => document.getElementById("fileInput")?.click()}
+                            >
+                              <input
+                                id="fileInput"
+                                type="file"
+                                onChange={handleFileChange}
+                                style={{ display: "none" }}
+                              />
+                              <div className="upload-content">
+                                <i className={`fas ${selectedFile ? "fa-check-circle" : "fa-cloud-upload-alt"}`} aria-hidden="true" />
+                                {selectedFile ? (
+                                  <div className="upload-text">
+                                    <p className="upload-filename">{selectedFile.name}</p>
+                                    <span className="upload-hint">クリックして変更</span>
+                                  </div>
+                                ) : (
+                                  <div className="upload-text">
+                                    <p className="upload-label">クリックまたはドラッグ＆ドロップ</p>
+                                    <span className="upload-hint">PDF・画像など8MBまで</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            {msg.role === "ai" ? (
-                              renderAiText(msg.text)
+                          </div>
+                          <div className="form-group">
+                            <label>プランを選択</label>
+                            <div className="plan-options">
+                              {planOptions.map((plan) => (
+                                <label
+                                  key={plan.key}
+                                  className={`plan-option ${selectedPlan === plan.key ? "selected" : ""}`}
+                                >
+                                  <div className="plan-option-header">
+                                    <input
+                                      type="radio"
+                                      name="plan"
+                                      value={plan.key}
+                                      checked={selectedPlan === plan.key}
+                                      onChange={() => setSelectedPlan(plan.key)}
+                                    />
+                                    <span className="plan-name">{plan.label}</span>
+                                  </div>
+                                  <p className="plan-description">
+                                    {plan.description}
+                                  </p>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="initialMessage">AIにチャットで相談</label>
+                          <textarea
+                            id="initialMessage"
+                            value={initialMessage}
+                            onChange={(e) => setInitialMessage(e.target.value)}
+                            rows={6}
+                            placeholder="例）RC造の補強で鉄筋量が増えそう。予算内で納める案がほしい　など"
+                          />
+
+                        </div>
+                        <div className="chat-actions">
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={startChatStage}
+                            disabled={loading}
+                          >
+                            AIチャットを開始
+                          </button>
+                          {status ? (
+                            <span className="chat-status">{status}</span>
+                          ) : (
+                            <span className="chat-hint">開始後すぐにAIが整理します。</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {stage === "chat" && (
+                      <div className="chat-stage">
+                        <div className="stage-lead">
+                          <h3 className="stage-title">AIと話しながら要点を固めます</h3>
+                          <p className="stage-desc">
+                            返信中は少しお待ちください。気になる点は短く送ると整理が早いです。
+                          </p>
+                        </div>
+                        <div className="chat-messages">
+                          {messages.length === 0 ? (
+                            <div className="chat-empty">
+                              最初の一言を送るとここに回答が表示されます。課題や希望を簡潔に書いてください。
+                            </div>
+                          ) : (
+                            messages.map((msg, idx) => (
+                              <div
+                                key={`${msg.role}-${idx}-${msg.text.slice(0, 4)}`}
+                                className={`chat-message ${msg.role}`}
+                              >
+                                <div className="chat-meta">
+                                  {msg.role === "user" ? "ユーザー" : "AI"}
+                                </div>
+                                {msg.role === "ai" ? (
+                                  renderAiText(msg.text)
+                                ) : (
+                                  <div className="chat-text">{msg.text}</div>
+                                )}
+                              </div>
+                            ))
+                          )}
+                          {loading && (
+                            <div className="chat-message ai">
+                              <div className="chat-meta">AI</div>
+                              <div className="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                              </div>
+                            </div>
+                          )}
+                          <div ref={chatEndRef} />
+                        </div>
+                        <div className="chat-input-area">
+                          <div className="chat-input-header">
+                            <span className={`status-dot ${loading ? "live" : ""}`} />
+                            <p className="chat-hint">{chatHintText}</p>
+                          </div>
+                          <textarea
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            rows={3}
+                            placeholder="追記や気になる点を入力してください。短文でOKです。"
+                          />
+                          <div className="chat-actions">
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => sendMessage()}
+                              disabled={loading || !input.trim()}
+                            >
+                              {loading ? "送信中..." : "送信"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={finishChat}
+                              disabled={messages.length === 0}
+                            >
+                              チャットをまとめて送信へ
+                            </button>
+                            {status ? (
+                              <span className="chat-status">{status}</span>
                             ) : (
-                              <div className="chat-text">{msg.text}</div>
+                              <span className="chat-inline-note">
+                                AIの回答は送信前に要約されます。
+                              </span>
                             )}
                           </div>
-                        ))
-                      )}
-                    </div>
-                    <div className="chat-input-area">
-                      <textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        rows={3}
-                        placeholder="追記したいことを入力してください。"
-                      />
-                      <div className="chat-actions">
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={() => sendMessage()}
-                          disabled={loading || !input.trim()}
-                        >
-                          {loading ? "送信中..." : "送信"}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={finishChat}
-                          disabled={messages.length === 0}
-                        >
-                          チャットを終了して送信へ
-                        </button>
-                        {status && <span className="chat-status">{status}</span>}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                )}
+                    )}
 
-                {stage === "inquiry" && (
-                  <form className="chat-stage" onSubmit={submitInquiry}>
-                    <p className="chat-label">ステップ3：連絡先を送信</p>
-                    <div className="form-group">
-                      <label>チャット要約</label>
-                      <textarea value={summary} readOnly rows={4} />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="customerName">お名前 *</label>
-                      <input
-                        id="customerName"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="customerEmail">メールアドレス *</label>
-                      <input
-                        id="customerEmail"
-                        type="email"
-                        value={customerEmail}
-                        onChange={(e) => setCustomerEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="customerPhone">電話番号</label>
-                      <input
-                        id="customerPhone"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                      />
-                    </div>
-                    <div className="chat-actions">
-                      <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={!customerName.trim() || !customerEmail.trim()}
-                      >
-                        {submitStatus === "送信中..." ? "送信中..." : "送信"}
-                      </button>
-                      {submitStatus && (
-                        <span className="chat-status">{submitStatus}</span>
-                      )}
-                    </div>
-                  </form>
-                )}
+                    {stage === "inquiry" && (
+                      <form className="chat-stage" onSubmit={submitInquiry}>
+                        <div className="stage-lead">
+                          <h3 className="stage-title">この内容で担当者に送信します</h3>
+                          <p className="stage-desc">
+                            電話が難しい場合はメールのみでも大丈夫です。
+                          </p>
+                        </div>
+                        <div className="form-group">
+                          <label>チャット要約</label>
+                          <textarea value={summary} readOnly rows={4} />
+                          <p className="helper-text weak">
+                            AIとのやりとりをそのまま共有します。
+                          </p>
+                        </div>
+                        <div className="form-grid">
+                          <div className="form-group">
+                            <label htmlFor="customerName">お名前 *</label>
+                            <input
+                              id="customerName"
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label htmlFor="customerEmail">メールアドレス *</label>
+                            <input
+                              id="customerEmail"
+                              type="email"
+                              value={customerEmail}
+                              onChange={(e) => setCustomerEmail(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="customerPhone">電話番号</label>
+                          <input
+                            id="customerPhone"
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                          />
+                          <p className="helper-text weak">
+                            メールのみ希望の場合は空欄でも送信できます。
+                          </p>
+                        </div>
+                        <div className="chat-actions">
+                          <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={!customerName.trim() || !customerEmail.trim()}
+                          >
+                            {submitStatus === "送信中..." ? "送信中..." : "送信"}
+                          </button>
+                          {submitStatus ? (
+                            <span className="chat-status">{submitStatus}</span>
+                          ) : (
+                            <span className="chat-inline-note">
+                              送信後、担当からご案内します。
+                            </span>
+                          )}
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
