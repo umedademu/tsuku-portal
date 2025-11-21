@@ -1,17 +1,36 @@
 import { NextResponse } from "next/server";
 
-type ChatMessage = {
+type GeminiInlineData = {
+  data: string;
+  mimeType: string;
+};
+
+type GeminiPart = {
+  text?: string;
+  inlineData?: GeminiInlineData;
+};
+
+type GeminiContent = {
   role: "user" | "model";
-  text: string;
+  parts: GeminiPart[];
 };
 
 type RequestBody = {
   plan?: string;
   message?: string;
-  history?: ChatMessage[];
+  messageParts?: GeminiPart[];
+  history?: Array<
+    | GeminiContent
+    | {
+        role?: string;
+        text?: string;
+        parts?: GeminiPart[];
+      }
+  >;
 };
 
 const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-pro";
+const MAX_INLINE_BYTES = 8 * 1024 * 1024;
 
 function getPromptByPlan(plan: string): string {
   const rawPrompts = process.env.PROMPTS_JSON;
@@ -28,30 +47,97 @@ function getPromptByPlan(plan: string): string {
   const normalizedPlan = plan.toLowerCase();
   const found = parsed[normalizedPlan];
   if (!found || !found.systemPrompt) {
-    throw new Error(`指定プラン(${normalizedPlan})のプロンプトが見つかりません`);
+    throw new Error(
+      `指定されたプラン(${normalizedPlan})のプロンプトが見つかりません`,
+    );
   }
   return found.systemPrompt;
 }
 
-async function callGemini(
-  systemPrompt: string,
-  history: ChatMessage[],
-  userMessage: string,
-) {
+const calcInlineBytes = (data: string) => Math.ceil((data.length * 3) / 4);
+
+function normalizeParts(parts?: unknown[]): GeminiPart[] {
+  if (!Array.isArray(parts)) return [];
+  const normalized: GeminiPart[] = [];
+
+  for (const part of parts) {
+    if (!part || typeof part !== "object") continue;
+    const maybePart = part as Record<string, unknown>;
+    const text =
+      typeof maybePart.text === "string" && maybePart.text
+        ? maybePart.text
+        : undefined;
+
+    let inlineData: GeminiInlineData | undefined;
+    const rawInline = maybePart.inlineData as
+      | { data?: unknown; mimeType?: unknown }
+      | undefined;
+
+    if (
+      rawInline &&
+      typeof rawInline === "object" &&
+      typeof rawInline.data === "string" &&
+      rawInline.data &&
+      typeof rawInline.mimeType === "string" &&
+      rawInline.mimeType
+    ) {
+      if (calcInlineBytes(rawInline.data) > MAX_INLINE_BYTES) {
+        throw new Error("添付ファイルは8MB以下にしてください。");
+      }
+      inlineData = {
+        data: rawInline.data,
+        mimeType: rawInline.mimeType,
+      };
+    }
+
+    if (text || inlineData) {
+      normalized.push({
+        ...(text ? { text } : {}),
+        ...(inlineData ? { inlineData } : {}),
+      });
+    }
+  }
+
+  return normalized;
+}
+
+function normalizeHistory(historyInput: RequestBody["history"]): GeminiContent[] {
+  if (!Array.isArray(historyInput)) return [];
+
+  const normalized: GeminiContent[] = [];
+
+  for (const item of historyInput) {
+    if (!item || typeof item !== "object") continue;
+
+    const roleValue = (item as { role?: string }).role;
+    const role =
+      roleValue === "user" || roleValue === "model" ? roleValue : null;
+    if (!role) continue;
+
+    const partsFromItem =
+      "parts" in (item as Record<string, unknown>)
+        ? normalizeParts((item as { parts?: unknown[] }).parts)
+        : [];
+
+    if (partsFromItem.length > 0) {
+      normalized.push({ role, parts: partsFromItem });
+      continue;
+    }
+
+    const text = (item as { text?: unknown }).text;
+    if (typeof text === "string" && text) {
+      normalized.push({ role, parts: [{ text }] });
+    }
+  }
+
+  return normalized;
+}
+
+async function callGemini(systemPrompt: string, contents: GeminiContent[]) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY が設定されていません");
   }
-
-  const contents = history.map((item) => ({
-    role: item.role,
-    parts: [{ text: item.text }],
-  }));
-
-  contents.push({
-    role: "user",
-    parts: [{ text: userMessage }],
-  });
 
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -79,7 +165,7 @@ async function callGemini(
     await response.json();
   const text =
     data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-    "回答を取得できませんでした";
+    "応答を取得できませんでした。";
   return text;
 }
 
@@ -87,18 +173,27 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RequestBody;
     const plan = body.plan?.toLowerCase() || "blue";
-    const userMessage = (body.message || "").trim();
-    const history = Array.isArray(body.history) ? body.history : [];
 
-    if (!userMessage) {
+    const userPartsFromBody = normalizeParts(body.messageParts);
+    const userMessageText = (body.message || "").trim();
+    const userParts =
+      userPartsFromBody.length > 0
+        ? userPartsFromBody
+        : userMessageText
+          ? [{ text: userMessageText }]
+          : [];
+
+    if (userParts.length === 0) {
       return NextResponse.json(
         { error: "メッセージを入力してください" },
         { status: 400 },
       );
     }
 
+    const history = normalizeHistory(body.history);
     const systemPrompt = getPromptByPlan(plan);
-    const aiText = await callGemini(systemPrompt, history, userMessage);
+    const contents = [...history, { role: "user", parts: userParts }];
+    const aiText = await callGemini(systemPrompt, contents);
 
     return NextResponse.json({
       message: aiText,
@@ -109,6 +204,10 @@ export async function POST(req: Request) {
       error instanceof Error && error.message
         ? error.message
         : "サーバーエラーが発生しました";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const statusCode =
+      error instanceof Error && error.message.includes("添付ファイル")
+        ? 400
+        : 500;
+    return NextResponse.json({ error: message }, { status: statusCode });
   }
 }

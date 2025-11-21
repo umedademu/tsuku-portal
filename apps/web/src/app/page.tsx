@@ -124,6 +124,27 @@ const planLabelMap: Record<PlanKey, string> = {
   green: "GREENプラン",
 };
 
+type FileData = {
+  name: string;
+  base64: string;
+  mimeType: string;
+};
+
+type GeminiPartPayload = {
+  text?: string;
+  inlineData?: {
+    data: string;
+    mimeType: string;
+  };
+};
+
+type GeminiHistoryPayload = {
+  role: "user" | "model";
+  parts: GeminiPartPayload[];
+};
+
+const MAX_FILE_SIZE = 8 * 1024 * 1024;
+
 const formatLineBreaks = (text: string) => {
   const parts = text.split("\n");
   return parts.map((part, index) => (
@@ -132,6 +153,50 @@ const formatLineBreaks = (text: string) => {
       {index < parts.length - 1 && <br />}
     </Fragment>
   ));
+};
+
+const readFileAsBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      const base64 = result.split(",")[1];
+      if (!base64) {
+        reject(new Error("file parse error"));
+        return;
+      }
+      resolve(base64);
+    };
+    reader.onerror = () => {
+      reject(reader.error || new Error("file read error"));
+    };
+    reader.readAsDataURL(file);
+  });
+
+const buildHistoryPayload = (
+  chatMessages: { role: "user" | "ai"; text: string }[],
+  fileData: FileData | null,
+): GeminiHistoryPayload[] => {
+  let fileAdded = false;
+
+  return chatMessages.map((message) => {
+    const parts: GeminiPartPayload[] = [{ text: message.text }];
+
+    if (!fileAdded && fileData && message.role === "user") {
+      parts.push({
+        inlineData: {
+          data: fileData.base64,
+          mimeType: fileData.mimeType,
+        },
+      });
+      fileAdded = true;
+    }
+
+    return {
+      role: message.role === "ai" ? "model" : "user",
+      parts,
+    };
+  });
 };
 
 export default function Home() {
@@ -148,6 +213,9 @@ export default function Home() {
   );
   const [initialMessage, setInitialMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFileData, setSelectedFileData] = useState<FileData | null>(
+    null,
+  );
   const [summary, setSummary] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -171,6 +239,7 @@ export default function Home() {
     setStage("initial");
     setInitialMessage("");
     setSelectedFile(null);
+    setSelectedFileData(null);
     setSummary("");
     setCustomerName("");
     setCustomerEmail("");
@@ -193,16 +262,28 @@ export default function Home() {
     const body = raw.trim();
     if (!body || loading) return;
 
+    if (selectedFile && !selectedFileData) {
+      setStatus("�t�@�C���̓ǂݍ��݂��҂��Ă��������B");
+      return;
+    }
+
     const userText =
       isFirstTurn && selectedFile
         ? `${body}\n\n【添付ファイル】${selectedFile.name}`
         : body;
 
     const userMessage = { role: "user" as const, text: userText };
-    const historyPayload = [...messages, userMessage].map((m) => ({
-      role: m.role === "ai" ? "model" : "user",
-      text: m.text,
-    }));
+    const historyPayload = buildHistoryPayload(messages, selectedFileData);
+    const userParts: GeminiPartPayload[] = [{ text: userText }];
+
+    if (selectedFileData && messages.length === 0) {
+      userParts.push({
+        inlineData: {
+          data: selectedFileData.base64,
+          mimeType: selectedFileData.mimeType,
+        },
+      });
+    }
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
@@ -218,6 +299,7 @@ export default function Home() {
         body: JSON.stringify({
           plan: planKey,
           message: userText,
+          messageParts: userParts,
           history: historyPayload,
         }),
       });
@@ -237,9 +319,37 @@ export default function Home() {
     }
   };
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
+    setStatus("");
+
+    if (!file) {
+      setSelectedFile(null);
+      setSelectedFileData(null);
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setStatus("ファイルは8MB以下にしてください。");
+      setSelectedFile(null);
+      setSelectedFileData(null);
+      return;
+    }
+
     setSelectedFile(file);
+    try {
+      const base64 = await readFileAsBase64(file);
+      setSelectedFileData({
+        name: file.name,
+        base64,
+        mimeType: file.type || "application/octet-stream",
+      });
+    } catch (error) {
+      console.error("file read error", error);
+      setStatus("ファイルの読み込みに失敗しました。もう一度お試しください。");
+      setSelectedFile(null);
+      setSelectedFileData(null);
+    }
   };
 
   const startChatStage = () => {
