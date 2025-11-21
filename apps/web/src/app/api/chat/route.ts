@@ -192,7 +192,8 @@ export async function POST(req: Request) {
 
     const history = normalizeHistory(body.history);
     const systemPrompt = getPromptByPlan(plan);
-    const contents = [...history, { role: "user", parts: userParts }];
+    const userContent: GeminiContent = { role: "user", parts: userParts };
+    const contents: GeminiContent[] = [...history, userContent];
     const aiText = await callGemini(systemPrompt, contents);
 
     return NextResponse.json({
