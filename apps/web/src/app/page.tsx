@@ -848,33 +848,34 @@ export default function Home() {
               </button>
             </div>
             <div className="chat-modal-body">
-              <div className="chat-top">
-                <div className="chat-progress">
-                  {stageSteps.map((step, index) => {
-                    const status =
-                      index < currentStageIndex
-                        ? "done"
-                        : index === currentStageIndex
-                          ? "active"
-                          : "next";
-                    return (
-                      <div className={`progress-step ${status}`} key={step.key}>
-                        <div className="step-circle">{index + 1}</div>
-                        <div className="step-text">
-                          <p className="step-title">{step.title}</p>
-                          <span className="step-desc">{step.description}</span>
+              <div className="chat-content">
+                <div className="chat-top">
+                  <div className="chat-progress">
+                    {stageSteps.map((step, index) => {
+                      const status =
+                        index < currentStageIndex
+                          ? "done"
+                          : index === currentStageIndex
+                            ? "active"
+                            : "next";
+                      return (
+                        <div className={`progress-step ${status}`} key={step.key}>
+                          <div className="step-circle">{index + 1}</div>
+                          <div className="step-text">
+                            <p className="step-title">{step.title}</p>
+                            <span className="step-desc">{step.description}</span>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+
                 </div>
 
-              </div>
-
-              <div className="chat-layout">
-                <div className="chat-main">
-                  <div className="chat-card">
-                    {stage === "initial" && (
+                <div className="chat-layout">
+                  <div className="chat-main">
+                    <div className="chat-card">
+                      {stage === "initial" && (
                       <div className="chat-stage">
                         <div className="stage-lead">
                           <h3 className="stage-title">最初に状況をまとめましょう</h3>
@@ -968,7 +969,7 @@ export default function Home() {
                         </div>
                       </div>
                     )}
-                    {stage === "chat" && (
+                      {stage === "chat" && (
                       <div className="chat-stage">
                         <div className="stage-lead">
                           <h3 className="stage-title">AIと話しながら要点を固めます</h3>
@@ -1050,7 +1051,7 @@ export default function Home() {
                       </div>
                     )}
 
-                    {stage === "inquiry" && (
+                      {stage === "inquiry" && (
                       <form className="chat-stage" onSubmit={submitInquiry}>
                         <div className="stage-lead">
                           <h3 className="stage-title">この内容で担当者に送信します</h3>
