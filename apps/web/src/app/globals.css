@@ -949,6 +949,62 @@ img {
   letter-spacing: 0.05em;
 }
 
+.chat-text {
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.chat-rich-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: inherit;
+}
+
+.chat-heading {
+  font-weight: 800;
+  font-size: 1.05rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--color-primary);
+  color: var(--color-text-main);
+}
+
+.chat-paragraph {
+  margin: 0;
+  color: inherit;
+}
+
+.chat-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chat-list li {
+  color: inherit;
+}
+
+.chat-divider {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.2), transparent);
+}
+
+.chat-rich-text strong {
+  color: var(--color-text-main);
+}
+
+.chat-rich-text code {
+  background: #e2e8f0;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+
 .chat-input-area {
   margin-top: auto;
   padding-top: 1.5rem;
