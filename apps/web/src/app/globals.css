@@ -1426,6 +1426,24 @@ img {
   margin-bottom: 0.75rem;
 }
 
+.chat-input-area textarea {
+  width: 100%;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  box-shadow: var(--shadow-xs);
+}
+
+.chat-input-area textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
 .status-dot {
   width: 10px;
   height: 10px;

@@ -394,7 +394,7 @@ export default function Home() {
     ? "AIが整理中です。少しお待ちください。"
     : messages.length === 0
       ? "箇条書きでもOKです。まずは困りごとを短く送ってください。"
-      : "追記したいポイントを1文ずつ送ると整理が早くなります。";
+      : "追加でAIにチャットで相談できます。";
   const funnelLabel =
     activeFunnel === "B2B"
       ? "事業者向け：リスク診断"
