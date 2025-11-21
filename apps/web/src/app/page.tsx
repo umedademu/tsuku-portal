@@ -354,6 +354,26 @@ const renderAiText = (text: string) => {
   );
 };
 
+const buildChatSummary = (
+  chatMessages: { role: "user" | "ai"; text: string }[],
+  file: File | null,
+) => {
+  if (chatMessages.length === 0) {
+    return "チャットの記録はまだありません。";
+  }
+
+  const sections = chatMessages.map((message) => {
+    const speaker = message.role === "user" ? "ユーザー" : "AI";
+    return `#### ${speaker}\n\n${message.text}`;
+  });
+
+  if (file) {
+    sections.push(`#### 添付ファイル\n\n${file.name}`);
+  }
+
+  return sections.join("\n\n---\n\n");
+};
+
 export default function Home() {
   const [chatOpen, setChatOpen] = useState(false);
   const [activeFunnel, setActiveFunnel] = useState<"B2B" | "B2C" | null>(null);
@@ -582,15 +602,7 @@ export default function Home() {
   };
 
   const finishChat = () => {
-    let summaryText =
-      messages
-        .map((m) => `${m.role === "user" ? "ユーザー" : "AI"}: ${m.text}`)
-        .join("\n\n") || "チャット内容はありません。";
-
-    if (selectedFile) {
-      summaryText += `\n\n【添付ファイル】${selectedFile.name}`;
-    }
-
+    const summaryText = buildChatSummary(messages, selectedFile);
     setSummary(summaryText);
     setStage("inquiry");
   };
@@ -1061,7 +1073,9 @@ export default function Home() {
                         </div>
                         <div className="form-group">
                           <label>チャット要約</label>
-                          <textarea value={summary} readOnly rows={4} />
+                          <div className="chat-summary-panel">
+                            {renderAiText(summary || "チャットの記録はまだありません。")}
+                          </div>
                           <p className="helper-text weak">
                             AIとのやりとりをそのまま共有します。
                           </p>
