@@ -1095,40 +1095,82 @@ export default function Home() {
                             {renderAiText(summary || "チャットの記録はまだありません。")}
                           </div>
                           <p className="helper-text weak">
-                            AIとのやりとりをそのまま共有します。
+                            AIとのやりとりをかんたんに振り返れます。
                           </p>
                         </div>
-                        <div className="form-grid">
-                          <div className="form-group">
-                            <label htmlFor="customerName">お名前 *</label>
-                            <input
-                              id="customerName"
-                              value={customerName}
-                              onChange={(e) => setCustomerName(e.target.value)}
-                              required
-                            />
+                        <div className="contact-card">
+                          <div className="contact-card-head">
+                            <div>
+                              <p className="contact-eyebrow">ご連絡先</p>
+                              <p className="contact-lead">
+                                診断内容の修正連絡やメール送付のため、お名前とご連絡先を教えてください。
+                              </p>
+                            </div>
+                            <span className="contact-badge">記入目安: 約20秒</span>
                           </div>
-                          <div className="form-group">
-                            <label htmlFor="customerEmail">メールアドレス *</label>
-                            <input
-                              id="customerEmail"
-                              type="email"
-                              value={customerEmail}
-                              onChange={(e) => setCustomerEmail(e.target.value)}
-                              required
-                            />
+                          <div className="contact-grid">
+                            <div className="contact-field">
+                              <div className="field-top">
+                                <div className="field-title">
+                                  <span className="field-icon">
+                                    <i className="fas fa-user" aria-hidden="true" />
+                                  </span>
+                                  <label htmlFor="customerName">お名前</label>
+                                </div>
+                                <span className="field-required">必須</span>
+                              </div>
+                              <input
+                                id="customerName"
+                                className="contact-input"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                placeholder="例) 筑波 太郎"
+                                required
+                              />
+                            </div>
+                            <div className="contact-field">
+                              <div className="field-top">
+                                <div className="field-title">
+                                  <span className="field-icon">
+                                    <i className="fas fa-envelope" aria-hidden="true" />
+                                  </span>
+                                  <label htmlFor="customerEmail">メールアドレス</label>
+                                </div>
+                                <span className="field-required">必須</span>
+                              </div>
+                              <input
+                                id="customerEmail"
+                                type="email"
+                                className="contact-input"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                placeholder="例) sample@example.com"
+                                required
+                              />
+                              <p className="field-note">診断結果の送付に使います。</p>
+                            </div>
+                            <div className="contact-field wide">
+                              <div className="field-top">
+                                <div className="field-title">
+                                  <span className="field-icon">
+                                    <i className="fas fa-phone" aria-hidden="true" />
+                                  </span>
+                                  <label htmlFor="customerPhone">電話番号</label>
+                                </div>
+                                <span className="field-optional">任意</span>
+                              </div>
+                              <input
+                                id="customerPhone"
+                                className="contact-input"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                placeholder="例) 090-1234-5678"
+                              />
+                              <p className="field-note">
+                                メールのみでよい場合は空欄のままで問題ありません。
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="form-group">
-                          <label htmlFor="customerPhone">電話番号</label>
-                          <input
-                            id="customerPhone"
-                            value={customerPhone}
-                            onChange={(e) => setCustomerPhone(e.target.value)}
-                          />
-                          <p className="helper-text weak">
-                            メールのみ希望の場合は空欄でも送信できます。
-                          </p>
                         </div>
                         <div className="chat-actions">
                           <button
