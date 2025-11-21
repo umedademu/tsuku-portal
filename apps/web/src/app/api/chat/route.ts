@@ -15,6 +15,12 @@ type GeminiContent = {
   parts: GeminiPart[];
 };
 
+type GeminiCandidate = {
+  content?: {
+    parts?: { text?: string }[];
+  };
+};
+
 type RequestBody = {
   plan?: string;
   message?: string;
@@ -142,7 +148,7 @@ async function callGemini(systemPrompt: string, contents: GeminiContent[]) {
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 4000 },
+    generationConfig: { temperature: 0.7, maxOutputTokens: 8000 },
   };
 
   const response = await fetch(
@@ -161,11 +167,16 @@ async function callGemini(systemPrompt: string, contents: GeminiContent[]) {
     );
   }
 
-  const data: { candidates?: { content?: { parts?: { text?: string }[] } }[] } =
-    await response.json();
+  const data: { candidates?: GeminiCandidate[] } = await response.json();
+  const textParts =
+    data?.candidates?.flatMap((candidate) =>
+      (candidate.content?.parts || [])
+        .map((part) => (typeof part?.text === "string" ? part.text : ""))
+        .filter(Boolean),
+    ) || [];
+
   const text =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-    "応答を取得できませんでした。";
+    textParts.join("\n").trim() || "応答を取得できませんでした。";
   return text;
 }
 
