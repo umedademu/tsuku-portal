@@ -9,7 +9,7 @@ import {
   type FormEvent,
 } from "react";
 
-const companyName = "株式会社相模建設チームつくるんジャー";
+const companyName = "株式会社 相模建設ツクルンジャー";
 const navLinks = [
   { label: "選ばれる理由", href: "#why-ai" },
   { label: "施工事例", href: "#works" },
@@ -387,8 +387,20 @@ export default function Home() {
       <header className="site-header">
         <div className="container">
           <div className="inner">
-            <div className="logo">
-              <span className="text-blue-600">TSUKU</span>-PORTAL
+            <div className="header-social">
+              <div className="social-links">
+                {socialLinks.map((link) => (
+                  <a
+                    key={`${link.href}-header`}
+                    href={link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={link.label}
+                  >
+                    <i className={link.icon} aria-hidden="true" />
+                  </a>
+                ))}
+              </div>
             </div>
             <div className="nav-area">
               <ul className="nav-menu">
@@ -398,7 +410,7 @@ export default function Home() {
                   </li>
                 ))}
                 <li>
-                  <a className="btn btn-primary" href="#hero-cta-anchor">
+                  <a className="btn btn-header-cta" href="#hero-cta-anchor">
                     無料診断開始
                   </a>
                 </li>
@@ -498,7 +510,7 @@ export default function Home() {
                 />
               </div>
               <div className="expert-bio">
-                <h3>佐々木 健太</h3>
+                <h3>田中太郎</h3>
                 <p className="expert-title">{companyName}</p>
                 <p>
                   現場経験とAI活用の両軸で、コストとリスクを同時に最適化する診断が得意です。
