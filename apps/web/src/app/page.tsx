@@ -1059,7 +1059,7 @@ export default function Home() {
                               onClick={() => sendMessage()}
                               disabled={loading || !input.trim()}
                             >
-                              {loading ? "送信中..." : "送信"}
+                              {loading ? "思考中..." : "送信"}
                             </button>
                             <button
                               type="button"
