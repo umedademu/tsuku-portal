@@ -391,7 +391,7 @@ export default function Home() {
     0,
   );
   const chatHintText = loading
-    ? "AIが整理中です。少しお待ちください。"
+    ? "AIが思考中です"
     : messages.length === 0
       ? "箇条書きでもOKです。まずは困りごとを短く送ってください。"
       : "追加でAIにチャットで相談できます。";
