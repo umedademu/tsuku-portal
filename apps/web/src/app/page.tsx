@@ -388,7 +388,7 @@ export default function Home() {
         <div className="container">
           <div className="inner">
             <div className="logo">
-              <span className="text-blue-400">TSUKU</span>-PORTAL
+              <span className="text-blue-600">TSUKU</span>-PORTAL
             </div>
             <div className="nav-area">
               <ul className="nav-menu">
@@ -467,7 +467,7 @@ export default function Home() {
             <p className="section-subtitle text-center">
               建設業界で見落とされがちな問題を、最新AI技術で解決します。
               <br />
-              今月、<span className="highlight text-amber-400 font-bold">{stats.monthlyUsers}</span>
+              今月、<span className="highlight text-amber-600 font-bold">{stats.monthlyUsers}</span>
               名がこの診断を利用しました。
             </p>
             <div className="features-grid">
@@ -601,8 +601,8 @@ export default function Home() {
                   {activeFunnel === "B2B"
                     ? "事業者向け：リスク診断"
                     : activeFunnel === "B2C"
-                    ? "個人向け：安全診断"
-                    : "診断モード未選択"}
+                      ? "個人向け：安全診断"
+                      : "診断モード未選択"}
                   <span className="plan-chip">
                     選択プラン: {planLabelMap[selectedPlan]}
                   </span>
