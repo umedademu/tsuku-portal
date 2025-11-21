@@ -593,6 +593,11 @@ export default function Home() {
     }
   };
 
+  const handleStepClick = (targetStage: Stage, targetIndex: number) => {
+    if (targetIndex >= currentStageIndex) return;
+    setStage(targetStage);
+  };
+
   const startChatStage = () => {
     setStatus("");
     setStage("chat");
@@ -871,7 +876,20 @@ export default function Home() {
                             ? "active"
                             : "next";
                       return (
-                        <div className={`progress-step ${status}`} key={step.key}>
+                        <div
+                          className={`progress-step ${status}`}
+                          key={step.key}
+                          role={index < currentStageIndex ? "button" : undefined}
+                          tabIndex={index < currentStageIndex ? 0 : -1}
+                          aria-disabled={index >= currentStageIndex}
+                          onClick={() => handleStepClick(step.key, index)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleStepClick(step.key, index);
+                            }
+                          }}
+                        >
                           <div className="step-circle">{index + 1}</div>
                           <div className="step-text">
                             <p className="step-title">{step.title}</p>
@@ -1049,7 +1067,7 @@ export default function Home() {
                               onClick={finishChat}
                               disabled={messages.length === 0}
                             >
-                              チャットをまとめて送信へ
+                              送信フォームへ進む
                             </button>
                             {status ? (
                               <span className="chat-status">{status}</span>
