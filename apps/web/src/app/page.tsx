@@ -853,7 +853,7 @@ export default function Home() {
                 />
               </div>
               <div className="expert-bio">
-                <h3>秋元航</h3>
+                <h3>秋元 航</h3>
                 <p className="expert-title">{companyName}</p>
                 <p>
                   現場経験とAI活用の両軸で、コストとリスクを同時に最適化する診断が得意です。
