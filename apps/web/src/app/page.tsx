@@ -111,6 +111,21 @@ const office = {
   ],
 };
 
+const characters = {
+  char1: { src: "/images/characters/char_1.png", alt: "キャラクター1" },
+  char2: { src: "/images/characters/char_2.png", alt: "キャラクター2" },
+  char3: { src: "/images/characters/char_3.png", alt: "キャラクター3" },
+  char4: { src: "/images/characters/char_4.png", alt: "キャラクター4" },
+  char5: { src: "/images/characters/char_5.png", alt: "キャラクター5" },
+  char6: { src: "/images/characters/char_6.png", alt: "キャラクター6" },
+  char7: { src: "/images/characters/char_7.png", alt: "キャラクター7" },
+  char8: { src: "/images/characters/char_8.png", alt: "キャラクター8" },
+  char9: { src: "/images/characters/char_9.png", alt: "キャラクター9" },
+  char10: { src: "/images/characters/char_10.png", alt: "キャラクター10" },
+} as const;
+
+type CharacterId = keyof typeof characters;
+
 type Stage = "initial" | "chat" | "inquiry";
 type PlanKey = "blue" | "gold" | "green";
 const planOptions: { key: PlanKey; label: string; description: string }[] = [
@@ -174,6 +189,36 @@ const stageSteps: { key: Stage; title: string; description: string }[] = [
     description: "連絡先を入力して送信",
   },
 ];
+
+const CharacterSticker = ({
+  id,
+  className = "",
+  width,
+  height,
+  priority = false,
+  sizes,
+}: {
+  id: CharacterId;
+  className?: string;
+  width: number;
+  height: number;
+  priority?: boolean;
+  sizes?: string;
+}) => {
+  const character = characters[id];
+  return (
+    <div className={`character-sticker ${className}`.trim()}>
+      <Image
+        src={character.src}
+        alt={character.alt}
+        width={width}
+        height={height}
+        sizes={sizes}
+        priority={priority}
+      />
+    </div>
+  );
+};
 
 const formatLineBreaks = (text: string) => {
   const parts = text.split("\n");
@@ -670,6 +715,39 @@ export default function Home() {
       <main className="main-content">
         <div id="hero-cta-anchor" />
         <section className="hero section">
+          <div className="character-layer hero-characters" aria-hidden="true">
+            <CharacterSticker
+              id="char1"
+              className="hero-char hero-char-1"
+              width={220}
+              height={220}
+              priority
+              sizes="(max-width: 768px) 140px, 220px"
+            />
+            <CharacterSticker
+              id="char2"
+              className="hero-char hero-char-2"
+              width={240}
+              height={240}
+              priority
+              sizes="(max-width: 768px) 160px, 240px"
+            />
+            <CharacterSticker
+              id="char3"
+              className="hero-char hero-char-3"
+              width={200}
+              height={200}
+              priority
+              sizes="(max-width: 768px) 150px, 200px"
+            />
+            <CharacterSticker
+              id="char4"
+              className="hero-char hero-char-4"
+              width={190}
+              height={190}
+              sizes="(max-width: 768px) 150px, 190px"
+            />
+          </div>
           <div className="container animate-slide-up">
             <div className="hero-content">
               <div className="system-badge">
@@ -721,6 +799,8 @@ export default function Home() {
         </section>
 
         <section className="section" id="why-ai">
+          <div className="character-layer feature-characters" aria-hidden="true">
+          </div>
           <div className="container">
             <h2 className="section-title text-center">セカンドオピニオンの重要性</h2>
             <p className="section-subtitle text-center">
@@ -744,6 +824,22 @@ export default function Home() {
         </section>
 
         <section className="section expert-section" id="expert-profile">
+          <div className="character-layer expert-characters" aria-hidden="true">
+            <CharacterSticker
+              id="char5"
+              className="expert-char expert-char-1"
+              width={170}
+              height={170}
+              sizes="(max-width: 768px) 120px, 170px"
+            />
+            <CharacterSticker
+              id="char6"
+              className="expert-char expert-char-2"
+              width={210}
+              height={210}
+              sizes="(max-width: 768px) 140px, 210px"
+            />
+          </div>
           <div className="container">
             <h2 className="section-title text-center">専門家紹介</h2>
             <div className="expert-profile animate-slide-up">
@@ -774,6 +870,22 @@ export default function Home() {
         </section>
 
         <section className="section works-section" id="works">
+          <div className="character-layer works-characters" aria-hidden="true">
+            <CharacterSticker
+              id="char7"
+              className="works-char works-char-1"
+              width={190}
+              height={190}
+              sizes="(max-width: 768px) 130px, 190px"
+            />
+            <CharacterSticker
+              id="char8"
+              className="works-char works-char-2"
+              width={200}
+              height={200}
+              sizes="(max-width: 768px) 140px, 200px"
+            />
+          </div>
           <div className="container">
             <h2 className="section-title text-center">施工事例</h2>
             <div className="works-grid">
@@ -792,6 +904,22 @@ export default function Home() {
         </section>
 
         <section className="section seo-links-section">
+          <div className="character-layer keyword-characters" aria-hidden="true">
+            <CharacterSticker
+              id="char9"
+              className="keyword-char keyword-char-1"
+              width={200}
+              height={200}
+              sizes="(max-width: 768px) 140px, 200px"
+            />
+            <CharacterSticker
+              id="char10"
+              className="keyword-char keyword-char-2"
+              width={190}
+              height={190}
+              sizes="(max-width: 768px) 140px, 190px"
+            />
+          </div>
           <div className="container">
             <h3 className="section-title text-center mb-8 text-xl">対応キーワード</h3>
             <div className="keyword-cloud">
