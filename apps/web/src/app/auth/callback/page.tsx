@@ -53,8 +53,8 @@ function AuthCallbackContent() {
           }
           if (!cancelled) {
             setTone("success");
-            setMessage("ログインが完了しました。トップへ移動します。");
-            router.replace("/?auth=signup_verified");
+            setMessage("ログインが完了しました。診断ページへ移動します。");
+            router.replace("/workspace?auth=signup_verified");
           }
           return;
         }
@@ -69,8 +69,8 @@ function AuthCallbackContent() {
 
           if (!cancelled) {
             setTone("success");
-            setMessage("ログインが完了しました。トップへ移動します。");
-            router.replace("/?auth=signup_verified");
+            setMessage("ログインが完了しました。診断ページへ移動します。");
+            router.replace("/workspace?auth=signup_verified");
           }
           return;
         }
@@ -109,8 +109,8 @@ function AuthCallbackContent() {
           <i className="fas fa-arrow-left" aria-hidden="true" />
           <span>画面が切り替わらない場合は下のボタンから戻れます。</span>
         </div>
-        <Link href="/" className="btn btn-secondary auth-submit">
-          トップへ戻る
+        <Link href="/workspace" className="btn btn-secondary auth-submit">
+          診断ページへ進む
         </Link>
       </div>
     </div>

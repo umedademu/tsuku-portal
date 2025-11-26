@@ -1,11 +1,17 @@
 'use client';
 
 import Link from "next/link";
-import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 
 type ChatMessage = {
   role: "user" | "ai";
   text: string;
+};
+
+type AuthNotice = {
+  text: string;
+  tone: "success" | "info" | "error";
 };
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
@@ -27,7 +33,50 @@ export default function WorkspacePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [status, setStatus] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [authNotice, setAuthNotice] = useState<AuthNotice | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const authParam = searchParams.get("auth");
+  const searchParamsString = searchParams.toString();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!authParam) return;
+
+    const noticeMap: Record<string, AuthNotice> = {
+      login_success: {
+        text: "ログインしました。診断ページを開きました。",
+        tone: "success",
+      },
+      signup_success: {
+        text: "登録が完了しました。診断を始められます。",
+        tone: "success",
+      },
+      signup_verified: {
+        text: "メール認証が完了しました。診断を続けられます。",
+        tone: "success",
+      },
+      signup_pending: {
+        text: "仮登録が完了しました。メールのリンクで本登録を完了してください。",
+        tone: "info",
+      },
+    };
+
+    const found = noticeMap[authParam];
+    if (!found) return;
+
+    setAuthNotice(found);
+    const params = new URLSearchParams(searchParamsString);
+    params.delete("auth");
+    const nextPath = params.toString() ? `/workspace?${params.toString()}` : "/workspace";
+    router.replace(nextPath, { scroll: false });
+  }, [authParam, router, searchParamsString]);
+
+  useEffect(() => {
+    if (!authNotice) return;
+    const timer = setTimeout(() => setAuthNotice(null), 8000);
+    return () => clearTimeout(timer);
+  }, [authNotice]);
 
   const handleSend = () => {
     const body = input.trim();
@@ -110,6 +159,33 @@ export default function WorkspacePage() {
 
   return (
     <div className="diagnosis-page">
+      {authNotice && (
+        <div className="container">
+          <div className={`auth-notice ${authNotice.tone}`}>
+            <div className="auth-notice-text">
+              <i
+                className={
+                  authNotice.tone === "success"
+                    ? "fas fa-check-circle"
+                    : authNotice.tone === "error"
+                      ? "fas fa-exclamation-circle"
+                      : "fas fa-info-circle"
+                }
+                aria-hidden="true"
+              />
+              <span>{authNotice.text}</span>
+            </div>
+            <button
+              type="button"
+              className="auth-notice-close"
+              onClick={() => setAuthNotice(null)}
+              aria-label="通知を閉じる"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       <header className="diagnosis-hero">
         <div className="container">
           <div className="diagnosis-hero-box">

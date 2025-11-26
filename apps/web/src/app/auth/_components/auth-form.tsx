@@ -101,7 +101,9 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         }
 
         const needEmail = !data.session;
-        const next = needEmail ? "/?auth=signup_pending" : "/?auth=signup_success";
+        const next = needEmail
+          ? "/?auth=signup_pending"
+          : "/workspace?auth=signup_success";
         router.push(next);
         return;
       }
@@ -113,7 +115,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       if (error) {
         throw error;
       }
-      router.push("/?auth=login_success");
+      router.push("/workspace?auth=login_success");
     } catch (error) {
       const message = translateAuthError(error);
       setStatus(message);
