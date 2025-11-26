@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { supabaseBrowserClient } from "@/lib/supabase-client";
 
 type CallbackTone = "info" | "error" | "success";
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("確認中です。しばらくお待ちください。");
@@ -79,5 +79,24 @@ export default function AuthCallbackPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="auth-card">
+          <div className="auth-card-head">
+            <p className="auth-eyebrow">メール認証</p>
+            <h1 className="auth-title">ログイン処理中</h1>
+            <p className="auth-desc">確認メールのリンクを検証しています。</p>
+          </div>
+          <div className="auth-status">確認中です。しばらくお待ちください。</div>
+        </div>
+      }
+    >
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
