@@ -51,7 +51,8 @@ export async function POST(request: Request) {
 
   const cookieStore = await cookies();
   const supabase = createRouteHandlerClient({
-    cookies: async () => cookieStore,
+    // Next.js 16のPromise戻りに合わせつつ、実体は同期オブジェクトを渡す
+    cookies: () => cookieStore as unknown as ReturnType<typeof cookies>,
   });
   const {
     data: { user },
