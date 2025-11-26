@@ -1,6 +1,7 @@
 'use client';
 
 import Image from "next/image";
+import Link from "next/link";
 import {
   Fragment,
   type ReactNode,
@@ -769,12 +770,12 @@ export default function Home() {
                 </button>
               </div>
               <div className="auth-buttons delay-200 animate-slide-up">
-                <button type="button" className="btn btn-secondary auth-button">
+                <Link href="/auth/login" className="btn btn-secondary auth-button">
                   ログイン
-                </button>
-                <button type="button" className="btn btn-secondary auth-button">
+                </Link>
+                <Link href="/auth/signup" className="btn btn-secondary auth-button">
                   新規登録
-                </button>
+                </Link>
               </div>
               <div className="urgency-bar delay-300 animate-slide-up">
                 本日の無料診断受付枠 残り
