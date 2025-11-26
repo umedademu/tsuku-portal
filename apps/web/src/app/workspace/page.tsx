@@ -17,6 +17,7 @@ type AuthNotice = {
 };
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const FREE_LIMIT = 3;
 
 const initialMessages: ChatMessage[] = [
   {
@@ -35,6 +36,8 @@ function WorkspacePageContent() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [status, setStatus] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [remainingFree, setRemainingFree] = useState(FREE_LIMIT);
+  const [chatNotice, setChatNotice] = useState("");
   const [authNotice, setAuthNotice] = useState<AuthNotice | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -154,24 +157,35 @@ function WorkspacePageContent() {
   const handleSend = () => {
     const body = input.trim();
     if (!body) return;
+    if (remainingFree <= 0) {
+      setChatNotice("無料枠が0回になっています。プラン選択ページに進む想定です。");
+      return;
+    }
 
     const text = selectedFile
       ? `${body}\n\n【添付予定】${selectedFile.name}`
       : body;
+    const nextRemaining = Math.max(remainingFree - 1, 0);
 
     const userMessage: ChatMessage = { role: "user", text };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setRemainingFree(nextRemaining);
+    setChatNotice("");
 
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: "仮の回答です。正式な診断処理と文面は今後差し替えます。",
+          text: `仮の回答です。正式な診断処理と文面は今後差し替えます。\n\n（無料枠を1回消化しました。残り${nextRemaining}回です／ダミー表示）`,
         },
       ]);
     }, 420);
+
+    if (nextRemaining === 0) {
+      setChatNotice("無料枠を使い切りました。プラン選択に進む想定です。");
+    }
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -224,6 +238,7 @@ function WorkspacePageContent() {
   const resetMessages = () => {
     setMessages(initialMessages);
     setInput("");
+    setChatNotice("");
   };
 
   const openFilePicker = () => {
@@ -243,6 +258,9 @@ function WorkspacePageContent() {
       : userEmail
         ? "このまま診断を進められます。"
         : "ログインが必要です。トップページに戻って再度お試しください。";
+  const usedFree = FREE_LIMIT - remainingFree;
+  const isQuotaEmpty = remainingFree <= 0;
+  const usageRate = Math.min(100, Math.round((usedFree / FREE_LIMIT) * 100));
 
   return (
     <div className="diagnosis-page">
@@ -306,6 +324,24 @@ function WorkspacePageContent() {
                       {loggingOut ? "ログアウト中..." : "ログアウト"}
                     </button>
                   )}
+                </div>
+              </div>
+              <div className="usage-banner">
+                <div className="usage-texts">
+                  <p className="diagnosis-eyebrow">無料診断の残り（ダミー表示）</p>
+                  <p className="usage-main">
+                    あと <strong>{remainingFree}</strong> / {FREE_LIMIT} 回
+                  </p>
+                  <p className={`usage-note ${isQuotaEmpty ? "alert" : ""}`}>
+                    送信するたびに1回減ります。ページを閉じると元に戻ります。
+                  </p>
+                  <p className="usage-note">本実装ではサーバーの値と連動させます。</p>
+                </div>
+                <div className="usage-meter" aria-label="無料枠の進捗">
+                  <div className="usage-meter-track">
+                    <div className="usage-meter-bar" style={{ width: `${usageRate}%` }} />
+                  </div>
+                  <span className="usage-meter-caption">消化 {usedFree} / {FREE_LIMIT}</span>
                 </div>
               </div>
             </div>
@@ -388,6 +424,36 @@ function WorkspacePageContent() {
                 <span className="diagnosis-chip ghost">表示確認用</span>
               </div>
 
+              <div className="chat-usage">
+                <div className="chat-usage-info">
+                  <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
+                    残り {remainingFree} / {FREE_LIMIT} 回（ダミー）
+                  </span>
+                  <p className="chat-usage-note">
+                    送信するたびに1回減ります。実際はサーバーの残数と連動させます。
+                  </p>
+                </div>
+                <span className="chat-usage-chip">
+                  {isQuotaEmpty ? "プラン案内に切り替えます" : "無料3回までの表示テスト中"}
+                </span>
+              </div>
+
+              {isQuotaEmpty && (
+                <div className="plan-callout">
+                  <div>
+                    <p className="plan-callout-title">無料分は0回になりました</p>
+                    <p className="plan-callout-text">
+                      今は案内だけです。この状態でプラン選択ページ（/checkout/plan）へ進む動きに差し替える予定です。
+                    </p>
+                  </div>
+                  <Link href="/checkout/plan" className="btn btn-primary">
+                    プランを選ぶ（ダミー）
+                  </Link>
+                </div>
+              )}
+
+              {chatNotice && <p className="chat-notice">{chatNotice}</p>}
+
               <div className="chat-messages">
                 {messages.map((message, index) => (
                   <div
@@ -421,9 +487,9 @@ function WorkspacePageContent() {
                     type="button"
                     className="btn btn-primary"
                     onClick={handleSend}
-                    disabled={!input.trim()}
+                    disabled={!input.trim() || isQuotaEmpty}
                   >
-                    送信
+                    {isQuotaEmpty ? "残り0回のため送信不可" : "送信"}
                   </button>
                   <button type="button" className="btn btn-secondary" onClick={resetMessages}>
                     履歴をリセット
@@ -432,6 +498,11 @@ function WorkspacePageContent() {
                     <span className="chat-inline-note">添付予定: {selectedFile.name}</span>
                   ) : (
                     <span className="chat-inline-note">添付なしのまま送信できます。</span>
+                  )}
+                  {isQuotaEmpty && (
+                    <Link href="/checkout/plan" className="btn btn-secondary">
+                      プランを確認（ダミー）
+                    </Link>
                   )}
                 </div>
               </div>
