@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { Suspense, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 
 type ChatMessage = {
   role: "user" | "ai";
@@ -27,7 +27,7 @@ const initialMessages: ChatMessage[] = [
   },
 ];
 
-export default function WorkspacePage() {
+function WorkspacePageContent() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -334,5 +334,13 @@ export default function WorkspacePage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function WorkspacePage() {
+  return (
+    <Suspense fallback={<div className="diagnosis-page">読み込み中です…</div>}>
+      <WorkspacePageContent />
+    </Suspense>
   );
 }
