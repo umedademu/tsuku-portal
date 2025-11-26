@@ -430,7 +430,6 @@ const buildChatSummary = (
 
 export default function Home() {
   const [chatOpen, setChatOpen] = useState(false);
-  const [activeFunnel, setActiveFunnel] = useState<"B2B" | "B2C" | null>(null);
   const [messages, setMessages] = useState<
     { role: "user" | "ai"; text: string }[]
   >([]);
@@ -469,12 +468,7 @@ export default function Home() {
     : messages.length === 0
       ? "箇条書きでもOKです。まずは困りごとを短く送ってください。"
       : "追加でAIにチャットで相談できます。";
-  const funnelLabel =
-    activeFunnel === "B2B"
-      ? "事業者向け：リスク診断"
-      : activeFunnel === "B2C"
-        ? "個人向け：安全診断"
-        : "診断モード未選択";
+  const funnelLabel = "無料診断";
 
   useEffect(() => {
     document.body.style.overflow = chatOpen ? "hidden" : "";
@@ -483,8 +477,7 @@ export default function Home() {
     };
   }, [chatOpen]);
 
-  const startChat = (funnel: "B2B" | "B2C") => {
-    setActiveFunnel(funnel);
+  const startChat = () => {
     setMessages([]);
     setInput("");
     setStatus("");
@@ -769,24 +762,10 @@ export default function Home() {
                 <button
                   type="button"
                   className="btn btn-primary specialist-btn delay-100 animate-slide-up"
-                  data-funnel="B2B"
-                  data-mode="B2B"
-                  id="cta-b2b"
-                  onClick={() => startChat("B2B")}
+                  onClick={startChat}
                 >
                   <i className="fas fa-building" aria-hidden="true" />
-                  <span>事業者向け：リスク診断を開始</span>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary specialist-btn delay-200 animate-slide-up"
-                  data-funnel="B2C"
-                  data-mode="B2C"
-                  id="cta-b2c"
-                  onClick={() => startChat("B2C")}
-                >
-                  <i className="fas fa-home" aria-hidden="true" />
-                  <span>個人向け：安全診断を開始</span>
+                  <span>無料診断を開始</span>
                 </button>
               </div>
               <div className="urgency-bar delay-300 animate-slide-up">
