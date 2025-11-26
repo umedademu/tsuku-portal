@@ -48,10 +48,6 @@
 - 環境変数は `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` / `STRIPE_SECRET_KEY` / `STRIPE_PRICE_BLUE` / `STRIPE_PRICE_GREEN` / `STRIPE_PRICE_GOLD` を利用する（Vercel側にも設定が必要）。
 
 ## ステップ10：決済成功後の状態反映（未実装）
-- Stripe Webhook（checkout.session.completed など）で契約結果を受け取り、`user_profiles` と `checkout_sessions` を更新してプラン・ステータスを確定する。
-- 有料契約が成立したユーザーは `usage_counts` の無料残数チェックをスキップし、ワークスペースの利用可否を「サブスク状態」で判定する。
-- フロント（ワークスペース）で現在のプラン/ステータスを表示し、無料枠の案内と矛盾しないようにする。
-- Webhook署名検証と冪等処理（`webhook_events` に記録）を入れ、異常時はリトライ可能にする。
 
 ## 要件整理
 - プランごとにプロンプトが異なる（blue / green / gold は `docs/prompts` および `prompts_json.txt` を参照）。
