@@ -49,8 +49,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const cookieStore = await cookies();
   const supabase = createRouteHandlerClient({
-    cookies: () => cookies(),
+    cookies: async () => cookieStore,
   });
   const {
     data: { user },
