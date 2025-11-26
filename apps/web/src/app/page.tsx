@@ -768,6 +768,14 @@ export default function Home() {
                   <span>無料診断を開始</span>
                 </button>
               </div>
+              <div className="auth-buttons delay-200 animate-slide-up">
+                <button type="button" className="btn btn-secondary auth-button">
+                  ログイン
+                </button>
+                <button type="button" className="btn btn-secondary auth-button">
+                  新規登録
+                </button>
+              </div>
               <div className="urgency-bar delay-300 animate-slide-up">
                 本日の無料診断受付枠 残り
                 <span className="highlight">{stats.remainingToday}</span>
