@@ -11,6 +11,7 @@ import {
   useRef,
   type ChangeEvent,
   type FormEvent,
+  Suspense,
 } from "react";
 
 const companyName = "株式会社 相模建設ツクルンジャー";
@@ -430,9 +431,55 @@ const buildChatSummary = (
   return sections.join("\n\n---\n\n");
 };
 
-export default function Home() {
+function AuthNoticeLoader({
+  onNotice,
+}: {
+  onNotice: (notice: { text: string; tone: "success" | "info" | "error" } | null) => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const authParam = searchParams.get("auth");
+  const searchParamsString = searchParams.toString();
+
+  useEffect(() => {
+    if (!authParam) return;
+
+    const noticeMap: Record<
+      string,
+      { text: string; tone: "success" | "info" | "error" }
+    > = {
+      login_success: {
+        text: "ログインしました。診断を再開できます。",
+        tone: "success",
+      },
+      signup_success: {
+        text: "登録が完了しました。診断を始められます。",
+        tone: "success",
+      },
+      signup_pending: {
+        text: "仮登録が完了しました。メールのリンクで本登録を完了してください。",
+        tone: "info",
+      },
+      signup_verified: {
+        text: "メール認証が完了しました。ログイン状態になりました。",
+        tone: "success",
+      },
+    };
+
+    const found = noticeMap[authParam];
+    if (!found) return;
+
+    onNotice(found);
+    const params = new URLSearchParams(searchParamsString);
+    params.delete("auth");
+    const nextPath = params.toString() ? `/?${params.toString()}` : "/";
+    router.replace(nextPath, { scroll: false });
+  }, [authParam, onNotice, router, searchParamsString]);
+
+  return null;
+}
+
+export default function Home() {
   const [authNotice, setAuthNotice] = useState<{
     text: string;
     tone: "success" | "info" | "error";
@@ -462,50 +509,16 @@ export default function Home() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const authParam = searchParams.get("auth");
-    if (!authParam) return;
-
-    const noticeMap: Record<
-      string,
-      { text: string; tone: "success" | "info" | "error" }
-    > = {
-      login_success: {
-        text: "ログインしました。診断を再開できます。",
-        tone: "success",
-      },
-      signup_success: {
-        text: "登録が完了しました。診断を始められます。",
-        tone: "success",
-      },
-      signup_pending: {
-        text: "仮登録が完了しました。メールのリンクで本登録を完了してください。",
-        tone: "info",
-      },
-      signup_verified: {
-        text: "メール認証が完了しました。ログイン状態になりました。",
-        tone: "success",
-      },
-    };
-
-    const found = noticeMap[authParam];
-    if (!found) return;
-
-    setAuthNotice(found);
-    const timer = setTimeout(() => setAuthNotice(null), 8000);
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("auth");
-    const nextPath = params.toString() ? `/?${params.toString()}` : "/";
-    router.replace(nextPath, { scroll: false });
-
-    return () => clearTimeout(timer);
-  }, [router, searchParams]);
-
-  useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, loading]);
+
+  useEffect(() => {
+    if (!authNotice) return;
+    const timer = setTimeout(() => setAuthNotice(null), 8000);
+    return () => clearTimeout(timer);
+  }, [authNotice]);
 
   const currentStageIndex = Math.max(
     stageSteps.findIndex((step) => step.key === stage),
@@ -754,6 +767,9 @@ export default function Home() {
       </header>
 
       <main className="main-content">
+        <Suspense fallback={null}>
+          <AuthNoticeLoader onNotice={setAuthNotice} />
+        </Suspense>
         {authNotice && (
           <div className="container">
             <div className={`auth-notice ${authNotice.tone}`}>
