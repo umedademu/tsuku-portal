@@ -10,7 +10,6 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe =
   stripeSecretKey &&
   new Stripe(stripeSecretKey, {
-    apiVersion: "2024-06-20",
   });
 
 const priceMap: Record<PlanKey, string | undefined> = {
