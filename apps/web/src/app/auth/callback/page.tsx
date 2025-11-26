@@ -22,17 +22,19 @@ function AuthCallbackContent() {
 
     let code = queryCode || queryToken || "";
 
-    // 一部のリンクではハッシュ側にパラメータが入るため念のため拾う
-    if (!code && typeof window !== "undefined") {
+    // ハッシュ側にトークンが入るケースを考慮
+    let hashAccessToken = "";
+    let hashRefreshToken = "";
+    if (typeof window !== "undefined") {
       const hashParams = new URLSearchParams(window.location.hash.replace("#", ""));
-      code =
-        hashParams.get("code") ||
-        hashParams.get("token") ||
-        hashParams.get("access_token") ||
-        "";
+      hashAccessToken = hashParams.get("access_token") || "";
+      hashRefreshToken = hashParams.get("refresh_token") || "";
+      if (!code) {
+        code = hashParams.get("code") || hashParams.get("token") || "";
+      }
     }
 
-    if (!code) {
+    if (!code && !hashAccessToken) {
       setTone("error");
       setMessage("認証コードが見つかりませんでした。メールのリンクをもう一度開いてください。");
       return;
@@ -40,31 +42,37 @@ function AuthCallbackContent() {
 
     const run = async () => {
       try {
-        // 先にURLハッシュなどからセッションを取り込む
-        const { data, error } = await supabaseBrowserClient.auth.getSessionFromUrl({
-          storeSession: true,
-        });
-        if (!cancelled && data?.session) {
-          setTone("success");
-          setMessage("ログインが完了しました。トップへ移動します。");
-          router.replace("/?auth=signup_verified");
+        // ハッシュにaccess/refresh tokenがある場合は直接セッション化
+        if (hashAccessToken && hashRefreshToken) {
+          const { error: setSessionError } = await supabaseBrowserClient.auth.setSession({
+            access_token: hashAccessToken,
+            refresh_token: hashRefreshToken,
+          });
+          if (setSessionError) {
+            throw setSessionError;
+          }
+          if (!cancelled) {
+            setTone("success");
+            setMessage("ログインが完了しました。トップへ移動します。");
+            router.replace("/?auth=signup_verified");
+          }
           return;
-        }
-        if (error && !error.message.includes("No auth URL detected")) {
-          throw error;
         }
 
         // セッションが無い場合のみコード交換を試す
-        const { error: exchangeError } =
-          await supabaseBrowserClient.auth.exchangeCodeForSession(code);
-        if (exchangeError) {
-          throw exchangeError;
-        }
+        if (code) {
+          const { error: exchangeError } =
+            await supabaseBrowserClient.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            throw exchangeError;
+          }
 
-        if (!cancelled) {
-          setTone("success");
-          setMessage("ログインが完了しました。トップへ移動します。");
-          router.replace("/?auth=signup_verified");
+          if (!cancelled) {
+            setTone("success");
+            setMessage("ログインが完了しました。トップへ移動します。");
+            router.replace("/?auth=signup_verified");
+          }
+          return;
         }
       } catch {
         if (!cancelled) {
