@@ -15,6 +15,8 @@ function AuthCallbackContent() {
   const [tone, setTone] = useState<CallbackTone>("info");
 
   useEffect(() => {
+    let cancelled = false;
+
     const queryCode = searchParams.get("code");
     const queryToken = searchParams.get("token");
 
@@ -38,20 +40,45 @@ function AuthCallbackContent() {
 
     const run = async () => {
       try {
-        const { error } = await supabaseBrowserClient.auth.exchangeCodeForSession(code);
-        if (error) {
+        // 先にURLハッシュなどからセッションを取り込む
+        const { data, error } = await supabaseBrowserClient.auth.getSessionFromUrl({
+          storeSession: true,
+        });
+        if (!cancelled && data?.session) {
+          setTone("success");
+          setMessage("ログインが完了しました。トップへ移動します。");
+          router.replace("/?auth=signup_verified");
+          return;
+        }
+        if (error && !error.message.includes("No auth URL detected")) {
           throw error;
         }
-        setTone("success");
-        setMessage("ログインが完了しました。トップへ移動します。");
-        router.replace("/?auth=signup_verified");
+
+        // セッションが無い場合のみコード交換を試す
+        const { error: exchangeError } =
+          await supabaseBrowserClient.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          throw exchangeError;
+        }
+
+        if (!cancelled) {
+          setTone("success");
+          setMessage("ログインが完了しました。トップへ移動します。");
+          router.replace("/?auth=signup_verified");
+        }
       } catch {
-        setTone("error");
-        setMessage("認証に失敗しました。リンクの有効期限を確認して、必要なら再度ログインしてください。");
+        if (!cancelled) {
+          setTone("error");
+          setMessage("認証に失敗しました。リンクの有効期限を確認して、必要なら再度ログインしてください。");
+        }
       }
     };
 
     void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router, searchParams]);
 
   return (
