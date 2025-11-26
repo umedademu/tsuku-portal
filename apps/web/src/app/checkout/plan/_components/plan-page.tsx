@@ -28,7 +28,7 @@ const plans: PlanContent[] = [
       "コスト圧縮のための代替案を提示",
       "工程の基本段取りを簡潔に整理",
     ],
-    note: "選択結果はこのページ内で保持します。決済は次ステップで開始します。",
+    note: "選択後に「決済へ進む」を押すとStripeに移動します。決済完了後の反映は次のステップで追加します。",
   },
   {
     key: "green",
@@ -42,7 +42,7 @@ const plans: PlanContent[] = [
       "予算に合わせて優先順位を提案",
       "追加費用が膨らまないよう調整案を提示",
     ],
-    note: "決済連携は次の工程で有効化します。ここでは選択のみ保存します。",
+    note: "ここで選択して決済を開始できます。完了後の状態更新は次の工程で連携します。",
   },
   {
     key: "gold",
@@ -56,7 +56,7 @@ const plans: PlanContent[] = [
       "長期的な維持や更新を見据えた助言",
       "複数回のやり取りを前提に深掘り",
     ],
-    note: "料金表示と決済開始は次のステップでStripeに接続する予定です。",
+    note: "決済ボタンでStripeに移動します。契約後の状態反映は次のステップで接続します。",
   },
 ];
 
@@ -68,6 +68,40 @@ const planLabelMap: Record<PlanKey, string> = {
 
 export default function PlanPage() {
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>("green");
+  const [status, setStatus] = useState("");
+  const [statusTone, setStatusTone] = useState<"muted" | "error">("muted");
+  const [loading, setLoading] = useState(false);
+
+  const startCheckout = async () => {
+    if (loading) return;
+    setStatus("");
+    setStatusTone("muted");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/checkout/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: selectedPlan }),
+      });
+      const data = (await response.json()) as { url?: string; error?: string };
+
+      if (!response.ok || !data?.url) {
+        const message =
+          data?.error || "決済の開始に失敗しました。時間をおいて再度お試しください。";
+        setStatus(message);
+        setStatusTone("error");
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch {
+      setStatus("決済の開始に失敗しました。時間をおいて再度お試しください。");
+      setStatusTone("error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="plan-page">
@@ -76,12 +110,12 @@ export default function PlanPage() {
           <p className="plan-eyebrow">サブスク準備ステップ</p>
           <h1 className="plan-hero-title">プランを選んで先へ進む</h1>
           <p className="plan-hero-lead">
-            無料枠を使い切った方向けの案内です。ここではプランの見た目と説明だけを確認し、
-            決済や残数との連動は次のステップでつなぎます。
+            無料枠を使い切った方向けの案内です。ここでプランを選び、Stripeで決済を始めます。
+            決済完了後の残数更新などは次のステップでつなぎます。
           </p>
           <div className="plan-hero-actions">
             <span className="plan-hero-note">
-              選択内容はこのページ内だけで保持されます。ブラウザを閉じるとリセットされます。
+              ログイン状態のまま「決済へ進む」でStripeに遷移します。ブラウザを閉じると選択はリセットされます。
             </span>
             <div className="plan-hero-buttons">
               <Link href="/workspace" className="btn btn-secondary">
@@ -127,7 +161,11 @@ export default function PlanPage() {
                       <button
                         type="button"
                         className={`btn ${isActive ? "btn-secondary" : "btn-primary"}`}
-                        onClick={() => setSelectedPlan(plan.key)}
+                        onClick={() => {
+                          setSelectedPlan(plan.key);
+                          setStatus("");
+                          setStatusTone("muted");
+                        }}
                         aria-pressed={isActive}
                       >
                         {isActive ? "このプランを選択中" : "このプランを選ぶ"}
@@ -145,17 +183,27 @@ export default function PlanPage() {
               <p className="plan-summary-label">現在の選択</p>
               <p className="plan-summary-main">{planLabelMap[selectedPlan]}</p>
               <p className="plan-summary-note">
-                ここではプランの見た目だけを確認できます。Stripeの起票や残数更新は次のステップで追加します。
+                選択したプランでStripe Checkoutを開きます。決済完了後の利用可否反映は次の工程で接続します。
               </p>
             </div>
             <div className="plan-summary-actions">
-              <button type="button" className="btn btn-primary" disabled>
-                決済へ進む（次ステップで接続）
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={startCheckout}
+                disabled={loading}
+              >
+                {loading ? "決済ページへ移動中..." : "決済へ進む"}
               </button>
               <Link href="/workspace" className="btn btn-secondary">
                 診断ページに戻る
               </Link>
             </div>
+            {status && (
+              <p className={`plan-status ${statusTone === "error" ? "error" : ""}`} aria-live="polite">
+                {status}
+              </p>
+            )}
           </div>
         </div>
       </main>

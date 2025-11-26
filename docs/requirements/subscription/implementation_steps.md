@@ -41,7 +41,11 @@
 - 決済開始ボタンは無効化したままにし、「決済や残数連動は次のステップで接続する」旨を明記した。
 - 診断ページ `/workspace` への戻り導線を配置し、無料枠を使い切った後にここへ誘導する想定を示した。
 
-## ステップ9：プラン選択後のStripe Checkout遷移（未実装）
+## ステップ9：プラン選択後のStripe Checkout遷移（完了）
+- `/checkout/plan` の「決済へ進む」から `/api/checkout/session` を呼び出し、選択プラン（blue/green/gold）のPrice IDで Stripe Checkout を起票するようにした。
+- API側で Supabase のログイン状態を検証し、未ログインなら 401 で弾く。ブラウザのSupabaseクライアントを auth-helpers に切り替え、セッションをCookieに載せることでAPI側と共有する。
+- Stripe の API バージョンは公開済みの最新（2024-06-20）を指定し、成功/キャンセル後の戻り先 `/checkout/success` / `/checkout/cancel` を追加した（状態反映は次ステップ）。
+- 環境変数は `.env.local` の `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` / `STRIPE_SECRET_KEY` / `STRIPE_PRICE_BLUE` / `STRIPE_PRICE_GREEN` / `STRIPE_PRICE_GOLD` を使用する。
 
 ## ステップ10：決済成功後の状態反映（未実装）
 

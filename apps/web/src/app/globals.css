@@ -2585,6 +2585,16 @@ img {
   cursor: not-allowed;
 }
 
+.plan-status {
+  margin: 0.75rem 0 0;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.plan-status.error {
+  color: #b91c1c;
+}
+
 @media (max-width: 1024px) {
   .plan-grid {
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
