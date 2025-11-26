@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 
+import { supabaseBrowserClient } from "@/lib/supabase-client";
+
 type ChatMessage = {
   role: "user" | "ai";
   text: string;
@@ -34,11 +36,54 @@ function WorkspacePageContent() {
   const [status, setStatus] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [authNotice, setAuthNotice] = useState<AuthNotice | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authStateMessage, setAuthStateMessage] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const authParam = searchParams.get("auth");
   const searchParamsString = searchParams.toString();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchSession = async () => {
+      try {
+        const { data, error } = await supabaseBrowserClient.auth.getSession();
+        if (error) {
+          throw error;
+        }
+        if (!cancelled) {
+          setUserEmail(data.session?.user?.email ?? null);
+          setAuthStateMessage("");
+        }
+      } catch {
+        if (!cancelled) {
+          setAuthStateMessage("ログイン状態の取得に失敗しました。再読み込みしてください。");
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthReady(true);
+        }
+      }
+    };
+
+    void fetchSession();
+
+    const { data: subscription } = supabaseBrowserClient.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      setUserEmail(session?.user?.email ?? null);
+      setAuthStateMessage("");
+      setAuthReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+      subscription?.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (!authParam) return;
@@ -77,6 +122,34 @@ function WorkspacePageContent() {
     const timer = setTimeout(() => setAuthNotice(null), 8000);
     return () => clearTimeout(timer);
   }, [authNotice]);
+
+  useEffect(() => {
+    if (!authReady) return;
+    if (userEmail) return;
+    router.replace("/");
+  }, [authReady, router, userEmail]);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setAuthStateMessage("");
+
+    try {
+      const { error } = await supabaseBrowserClient.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      setUserEmail(null);
+      router.replace("/");
+    } catch {
+      setAuthNotice({
+        text: "ログアウトに失敗しました。時間をおいて再度お試しください。",
+        tone: "error",
+      });
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   const handleSend = () => {
     const body = input.trim();
@@ -157,6 +230,20 @@ function WorkspacePageContent() {
     fileInputRef.current?.click();
   };
 
+  const authHeadline = !authReady
+    ? "ログイン状態を確認しています..."
+    : userEmail
+      ? `${userEmail} でログイン中です`
+      : "まだログインしていません";
+
+  const authDescription = authStateMessage
+    ? authStateMessage
+    : !authReady
+      ? "確認中です。少しお待ちください。"
+      : userEmail
+        ? "このまま診断を進められます。"
+        : "ログインが必要です。トップページに戻って再度お試しください。";
+
   return (
     <div className="diagnosis-page">
       {authNotice && (
@@ -201,6 +288,25 @@ function WorkspacePageContent() {
                 <Link href="/" className="btn btn-secondary">
                   トップへ戻る
                 </Link>
+              </div>
+              <div className="auth-state-banner">
+                <div className="auth-state-texts">
+                  <p className="auth-state-label">ログイン状態</p>
+                  <p className="auth-state-main">{authHeadline}</p>
+                  <p className={`auth-state-note ${authStateMessage ? "error" : ""}`}>{authDescription}</p>
+                </div>
+                <div className="auth-state-actions">
+                  {userEmail && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleLogout}
+                      disabled={loggingOut}
+                    >
+                      {loggingOut ? "ログアウト中..." : "ログアウト"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
