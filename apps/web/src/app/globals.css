@@ -2302,6 +2302,321 @@ img {
   font-weight: 700;
 }
 
+/* Checkout Plan Page */
+.plan-page {
+  background:
+    radial-gradient(circle at 0% 10%, rgba(37, 99, 235, 0.04) 0%, transparent 38%),
+    radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.04) 0%, transparent 36%),
+    var(--color-bg-main);
+  min-height: 100vh;
+}
+
+.plan-hero {
+  padding: 110px 0 60px;
+}
+
+.plan-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: #eef2ff;
+  color: #312e81;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-hero-title {
+  margin: 0.5rem 0 0.25rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.plan-hero-lead {
+  margin: 1rem 0 1.25rem;
+  max-width: 860px;
+  color: var(--color-text-secondary);
+}
+
+.plan-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.plan-hero-note {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.plan-hero-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.plan-main {
+  padding: 10px 0 120px;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.plan-card {
+  position: relative;
+  --plan-accent: var(--color-primary);
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-xl);
+  padding: 1.4rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.plan-card::after {
+  content: "";
+  position: absolute;
+  inset: -30% -30% auto auto;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.08), transparent 60%);
+  transform: rotate(12deg);
+  z-index: 0;
+}
+
+.plan-card.gold {
+  --plan-accent: #d97706;
+}
+
+.plan-card.green {
+  --plan-accent: #16a34a;
+}
+
+.plan-card.blue {
+  --plan-accent: #2563eb;
+}
+
+.plan-card.active {
+  border-color: var(--plan-accent);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  transform: translateY(-6px);
+}
+
+.plan-card-top,
+.plan-card-bottom,
+.plan-feature-list,
+.plan-highlight {
+  position: relative;
+  z-index: 1;
+}
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(37, 99, 235, 0.12);
+  border-radius: var(--radius-full);
+  color: #1d4ed8;
+  font-weight: 800;
+  font-size: 0.85rem;
+  border: 1px solid rgba(37, 99, 235, 0.15);
+}
+
+.plan-card.gold .plan-badge {
+  background: rgba(217, 119, 6, 0.12);
+  color: #92400e;
+  border-color: rgba(217, 119, 6, 0.18);
+}
+
+.plan-card.green .plan-badge {
+  background: rgba(22, 163, 74, 0.12);
+  color: #166534;
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
+.plan-name {
+  margin: 0.3rem 0 0.15rem;
+  font-size: 1.5rem;
+  color: var(--color-text-main);
+}
+
+.plan-tagline {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.plan-highlight {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.03));
+  color: var(--color-text-main);
+  font-weight: 700;
+}
+
+.plan-card.gold .plan-highlight {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.09), rgba(217, 119, 6, 0.04));
+  border-color: rgba(217, 119, 6, 0.2);
+}
+
+.plan-card.green .plan-highlight {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.09), rgba(22, 163, 74, 0.04));
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+.plan-feature-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.plan-feature {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.plan-check {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--plan-accent);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.plan-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.plan-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.plan-card-actions .btn {
+  width: 100%;
+}
+
+.plan-card-actions .btn:disabled {
+  cursor: not-allowed;
+  background: #e2e8f0;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.plan-cta-hint {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.plan-summary {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-xl);
+  border: 1px dashed #cbd5e1;
+  background: white;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.plan-summary-label {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.plan-summary-main {
+  margin: 0.2rem 0 0.25rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+}
+
+.plan-summary-note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  max-width: 720px;
+}
+
+.plan-summary-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.plan-summary-actions .btn:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .plan-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .plan-hero {
+    padding: 80px 0 40px;
+  }
+
+  .plan-hero-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .plan-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .plan-summary-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .plan-summary-actions .btn {
+    width: 100%;
+  }
+}
+
 /* Auth pages */
 .auth-page {
   background:
