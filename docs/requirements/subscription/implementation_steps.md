@@ -43,9 +43,9 @@
 
 ## ステップ9：プラン選択後のStripe Checkout遷移（完了）
 - `/checkout/plan` の「決済へ進む」から `/api/checkout/session` を呼び出し、選択プラン（blue/green/gold）のPrice IDで Stripe Checkout を起票するようにした。
-- API側で Supabase のログイン状態を検証し、未ログインなら 401 で弾く。ブラウザのSupabaseクライアントを auth-helpers に切り替え、セッションをCookieに載せることでAPI側と共有する。
-- Stripe の API バージョンは公開済みの最新（2024-06-20）を指定し、成功/キャンセル後の戻り先 `/checkout/success` / `/checkout/cancel` を追加した（状態反映は次ステップ）。
-- 環境変数は `.env.local` の `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` / `STRIPE_SECRET_KEY` / `STRIPE_PRICE_BLUE` / `STRIPE_PRICE_GREEN` / `STRIPE_PRICE_GOLD` を使用する。
+- API側で Supabase のログイン状態を検証し、未ログインなら 401 で弾く。ブラウザのSupabaseクライアントを auth-helpers に切り替え、Cookie共有でサーバーがユーザーを取得できるようにした。
+- Stripe の API バージョン指定は外し、成功/キャンセル後の戻り先 `/checkout/success` / `/checkout/cancel` を追加した（状態反映は次ステップ）。
+- 環境変数は `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` / `STRIPE_SECRET_KEY` / `STRIPE_PRICE_BLUE` / `STRIPE_PRICE_GREEN` / `STRIPE_PRICE_GOLD` を利用する（Vercel側にも設定が必要）。
 
 ## ステップ10：決済成功後の状態反映（未実装）
 - Stripe Webhook（checkout.session.completed など）で契約結果を受け取り、`user_profiles` と `checkout_sessions` を更新してプラン・ステータスを確定する。
