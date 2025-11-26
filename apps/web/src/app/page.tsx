@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Fragment,
   type ReactNode,
@@ -430,6 +431,12 @@ const buildChatSummary = (
 };
 
 export default function Home() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [authNotice, setAuthNotice] = useState<{
+    text: string;
+    tone: "success" | "info" | "error";
+  } | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<
     { role: "user" | "ai"; text: string }[]
@@ -453,6 +460,46 @@ export default function Home() {
 
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>("green");
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const authParam = searchParams.get("auth");
+    if (!authParam) return;
+
+    const noticeMap: Record<
+      string,
+      { text: string; tone: "success" | "info" | "error" }
+    > = {
+      login_success: {
+        text: "ログインしました。診断を再開できます。",
+        tone: "success",
+      },
+      signup_success: {
+        text: "登録が完了しました。診断を始められます。",
+        tone: "success",
+      },
+      signup_pending: {
+        text: "仮登録が完了しました。メールのリンクで本登録を完了してください。",
+        tone: "info",
+      },
+      signup_verified: {
+        text: "メール認証が完了しました。ログイン状態になりました。",
+        tone: "success",
+      },
+    };
+
+    const found = noticeMap[authParam];
+    if (!found) return;
+
+    setAuthNotice(found);
+    const timer = setTimeout(() => setAuthNotice(null), 8000);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("auth");
+    const nextPath = params.toString() ? `/?${params.toString()}` : "/";
+    router.replace(nextPath, { scroll: false });
+
+    return () => clearTimeout(timer);
+  }, [router, searchParams]);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -707,6 +754,33 @@ export default function Home() {
       </header>
 
       <main className="main-content">
+        {authNotice && (
+          <div className="container">
+            <div className={`auth-notice ${authNotice.tone}`}>
+              <div className="auth-notice-text">
+                <i
+                  className={
+                    authNotice.tone === "success"
+                      ? "fas fa-check-circle"
+                      : authNotice.tone === "error"
+                        ? "fas fa-exclamation-circle"
+                        : "fas fa-info-circle"
+                  }
+                  aria-hidden="true"
+                />
+                <span>{authNotice.text}</span>
+              </div>
+              <button
+                type="button"
+                className="auth-notice-close"
+                onClick={() => setAuthNotice(null)}
+                aria-label="通知を閉じる"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
         <div id="hero-cta-anchor" />
         <section className="hero section">
           <div className="character-layer hero-characters" aria-hidden="true">

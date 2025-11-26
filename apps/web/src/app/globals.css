@@ -2132,6 +2132,66 @@ img {
   font-weight: 600;
 }
 
+.auth-status.success {
+  border-color: #a7f3d0;
+  background: #ecfdf3;
+  color: #065f46;
+}
+
+.auth-status.error {
+  border-color: #fecdd3;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.auth-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.1rem;
+  margin: 0 auto 1.2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: var(--color-primary-dark);
+  box-shadow: var(--shadow-md);
+}
+
+.auth-notice-text {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+}
+
+.auth-notice.success {
+  border-color: #a7f3d0;
+  background: #ecfdf3;
+  color: #065f46;
+}
+
+.auth-notice.error {
+  border-color: #fecdd3;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.auth-notice-close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  line-height: 1;
+}
+
+.auth-notice-close:hover {
+  opacity: 0.75;
+}
+
 .auth-switch {
   margin-top: 1rem;
   text-align: center;
