@@ -28,7 +28,7 @@ const plans: PlanContent[] = [
       "コスト圧縮のための代替案を提示",
       "工程の基本段取りを簡潔に整理",
     ],
-    note: "選択後に「決済へ進む」を押すとStripeに移動します。決済完了後の反映は次のステップで追加します。",
+    note: "選択後に「決済へ進む」を押すとStripeに移動します。完了後は状態を保存し、診断に戻れます。",
   },
   {
     key: "green",
@@ -42,7 +42,7 @@ const plans: PlanContent[] = [
       "予算に合わせて優先順位を提案",
       "追加費用が膨らまないよう調整案を提示",
     ],
-    note: "ここで選択して決済を開始できます。完了後の状態更新は次の工程で連携します。",
+    note: "ここで選択して決済を開始できます。完了後は状態を保存し、診断に戻れます。",
   },
   {
     key: "gold",
@@ -56,7 +56,7 @@ const plans: PlanContent[] = [
       "長期的な維持や更新を見据えた助言",
       "複数回のやり取りを前提に深掘り",
     ],
-    note: "決済ボタンでStripeに移動します。契約後の状態反映は次のステップで接続します。",
+    note: "決済ボタンでStripeに移動します。完了後は状態を保存し、診断に戻れます。",
   },
 ];
 
@@ -111,7 +111,7 @@ export default function PlanPage() {
           <h1 className="plan-hero-title">プランを選んで先へ進む</h1>
           <p className="plan-hero-lead">
             無料枠を使い切った方向けの案内です。ここでプランを選び、Stripeで決済を始めます。
-            決済完了後の残数更新などは次のステップでつなぎます。
+            決済完了後は状態を保存し、診断ページへ戻れます。
           </p>
           <div className="plan-hero-actions">
             <span className="plan-hero-note">
@@ -170,7 +170,7 @@ export default function PlanPage() {
                       >
                         {isActive ? "このプランを選択中" : "このプランを選ぶ"}
                       </button>
-                      <span className="plan-cta-hint">決済連携は次のステップで有効化します。</span>
+                      <span className="plan-cta-hint">決済連携は有効になっています。</span>
                     </div>
                   </div>
                 </article>
@@ -183,7 +183,7 @@ export default function PlanPage() {
               <p className="plan-summary-label">現在の選択</p>
               <p className="plan-summary-main">{planLabelMap[selectedPlan]}</p>
               <p className="plan-summary-note">
-                選択したプランでStripe Checkoutを開きます。決済完了後の利用可否反映は次の工程で接続します。
+                選択したプランでStripe Checkoutを開きます。決済完了後に状態を保存し、診断ページへ戻れます。
               </p>
             </div>
             <div className="plan-summary-actions">
