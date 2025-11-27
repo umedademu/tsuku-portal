@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import {
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type ReactNode,
+} from "react";
 
 import { supabaseBrowserClient } from "@/lib/supabase-client";
 
@@ -35,9 +43,143 @@ type GeminiHistoryPayload = {
   parts: GeminiPartPayload[];
 };
 
+type ChatBlock =
+  | { type: "heading"; level: number; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "list"; ordered: boolean; items: string[] }
+  | { type: "divider" };
+
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const FREE_LIMIT = 3;
 const CURRENT_PLAN = "green";
+
+const normalizeAiText = (text: string) =>
+  text
+    .replace(/\r/g, "\n")
+    .replace(/---+/g, "\n---\n")
+    .replace(/(\S)(#{1,6}\s)/g, "$1\n$2")
+    .replace(/(\S)\s+(\d+\.\s+)/g, "$1\n$2")
+    .replace(/(\S)\s+([*-]\s+)/g, "$1\n$2")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+const splitChatBlocks = (rawText: string): ChatBlock[] => {
+  const normalized = normalizeAiText(rawText);
+  if (!normalized) return [];
+
+  const lines = normalized
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const blocks: ChatBlock[] = [];
+
+  for (let i = 0; i < lines.length;) {
+    const line = lines[i];
+
+    if (line === "---") {
+      blocks.push({ type: "divider" });
+      i++;
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      blocks.push({
+        type: "heading",
+        level: headingMatch[1].length,
+        text: headingMatch[2].trim(),
+      });
+      i++;
+      continue;
+    }
+
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^[-*]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^[-*]\s+/, "").trim());
+        i++;
+      }
+      blocks.push({ type: "list", ordered: false, items });
+      continue;
+    }
+
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\d+\.\s+/, "").trim());
+        i++;
+      }
+      blocks.push({ type: "list", ordered: true, items });
+      continue;
+    }
+
+    blocks.push({ type: "paragraph", text: line });
+    i++;
+  }
+
+  return blocks;
+};
+
+const renderInline = (text: string): ReactNode[] =>
+  text
+    .split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g)
+    .filter(Boolean)
+    .map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={`b-${index}`}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith("*") && part.endsWith("*") && part.length > 1) {
+        return <em key={`i-${index}`}>{part.slice(1, -1)}</em>;
+      }
+      if (part.startsWith("`") && part.endsWith("`")) {
+        return <code key={`c-${index}`}>{part.slice(1, -1)}</code>;
+      }
+      return <span key={`t-${index}`}>{part}</span>;
+    });
+
+const renderAiText = (text: string) => {
+  const blocks = splitChatBlocks(text);
+
+  if (blocks.length === 0) {
+    return <div className="chat-text">{text}</div>;
+  }
+
+  return (
+    <div className="chat-rich-text">
+      {blocks.map((block, index) => {
+        if (block.type === "divider") {
+          return <div key={`d-${index}`} className="chat-divider" />;
+        }
+
+        if (block.type === "heading") {
+          return (
+            <div key={`h-${index}`} className="chat-heading">
+              {renderInline(block.text)}
+            </div>
+          );
+        }
+
+        if (block.type === "list") {
+          const ListTag = block.ordered ? "ol" : "ul";
+          return (
+            <ListTag key={`l-${index}`} className="chat-list">
+              {block.items.map((item, itemIndex) => (
+                <li key={`li-${itemIndex}`}>{renderInline(item)}</li>
+              ))}
+            </ListTag>
+          );
+        }
+
+        return (
+          <p key={`p-${index}`} className="chat-paragraph">
+            {renderInline(block.text)}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
 
 const readFileAsBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -595,7 +737,11 @@ function WorkspacePageContent() {
                     className={`chat-message ${message.role}`}
                   >
                     <div className="chat-meta">{message.role === "ai" ? "AI" : "ユーザー"}</div>
-                    <div className="chat-text">{message.text}</div>
+                    {message.role === "ai" ? (
+                      renderAiText(message.text)
+                    ) : (
+                      <div className="chat-text">{message.text}</div>
+                    )}
                   </div>
                 ))}
                 {messages.length === 0 && (
