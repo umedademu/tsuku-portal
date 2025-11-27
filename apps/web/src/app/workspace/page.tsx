@@ -16,17 +16,81 @@ type AuthNotice = {
   tone: "success" | "info" | "error";
 };
 
+type FileData = {
+  name: string;
+  base64: string;
+  mimeType: string;
+};
+
+type GeminiPartPayload = {
+  text?: string;
+  inlineData?: {
+    data: string;
+    mimeType: string;
+  };
+};
+
+type GeminiHistoryPayload = {
+  role: "user" | "model";
+  parts: GeminiPartPayload[];
+};
+
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const FREE_LIMIT = 3;
+const CURRENT_PLAN = "green";
+
+const readFileAsBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      const base64 = result.split(",")[1];
+      if (!base64) {
+        reject(new Error("file parse error"));
+        return;
+      }
+      resolve(base64);
+    };
+    reader.onerror = () => {
+      reject(reader.error || new Error("file read error"));
+    };
+    reader.readAsDataURL(file);
+  });
+
+const buildHistoryPayload = (
+  chatMessages: ChatMessage[],
+  fileData: FileData | null,
+): GeminiHistoryPayload[] => {
+  let fileAdded = false;
+
+  return chatMessages.map((message) => {
+    const parts: GeminiPartPayload[] = [{ text: message.text }];
+
+    if (!fileAdded && fileData && message.role === "user") {
+      parts.push({
+        inlineData: {
+          data: fileData.base64,
+          mimeType: fileData.mimeType,
+        },
+      });
+      fileAdded = true;
+    }
+
+    return {
+      role: message.role === "ai" ? "model" : "user",
+      parts,
+    };
+  });
+};
 
 const initialMessages: ChatMessage[] = [
   {
     role: "ai",
-    text: "ここではダミーの会話を表示しています。後続の実装で本番の処理に置き換えます。",
+    text: "図面や見積のファイルを添付して送ると、AIがその場で診断内容を返します。",
   },
   {
     role: "ai",
-    text: "資料アップロードとチャットを同じ画面で確認する骨組みだけを用意しています。",
+    text: "無料回数や決済まわりはまだダミーです。まずは気になる点を短く送ってみてください。",
   },
 ];
 
@@ -34,7 +98,9 @@ function WorkspacePageContent() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFileData, setSelectedFileData] = useState<FileData | null>(null);
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [remainingFree, setRemainingFree] = useState(FREE_LIMIT);
   const [chatNotice, setChatNotice] = useState("");
@@ -154,57 +220,111 @@ function WorkspacePageContent() {
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const body = input.trim();
-    if (!body) return;
+    if (!body || loading) return;
     if (remainingFree <= 0) {
       setChatNotice("無料枠が0回になっています。プラン選択ページに進む想定です。");
       return;
     }
+    if (selectedFile && !selectedFileData) {
+      setStatus("ファイルの読み込みが終わるまでお待ちください。");
+      return;
+    }
 
     const text = selectedFile
-      ? `${body}\n\n【添付予定】${selectedFile.name}`
+      ? `${body}\n\n【添付ファイル】${selectedFile.name}`
       : body;
     const nextRemaining = Math.max(remainingFree - 1, 0);
+    const firstUserIndex = messages.findIndex((message) => message.role === "user");
+    const historySource =
+      firstUserIndex === -1 ? [] : messages.slice(firstUserIndex);
+    const hasUserMessage = historySource.some((message) => message.role === "user");
 
     const userMessage: ChatMessage = { role: "user", text };
+    const historyPayload = buildHistoryPayload(historySource, selectedFileData);
+    const userParts: GeminiPartPayload[] = [{ text }];
+
+    if (selectedFileData && !hasUserMessage) {
+      userParts.push({
+        inlineData: {
+          data: selectedFileData.base64,
+          mimeType: selectedFileData.mimeType,
+        },
+      });
+    }
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setRemainingFree(nextRemaining);
     setChatNotice("");
+    setStatus("AIが回答を作成しています...");
+    setLoading(true);
 
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: `仮の回答です。正式な診断処理と文面は今後差し替えます。\n\n（無料枠を1回消化しました。残り${nextRemaining}回です／ダミー表示）`,
-        },
-      ]);
-    }, 420);
-
-    if (nextRemaining === 0) {
-      setChatNotice("無料枠を使い切りました。プラン選択に進む想定です。");
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: CURRENT_PLAN,
+          message: text,
+          messageParts: userParts,
+          history: historyPayload,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "AIからの回答取得に失敗しました。");
+      }
+      setMessages((prev) => [...prev, { role: "ai", text: data.message as string }]);
+      setStatus("");
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "AIの回答生成に失敗しました。";
+      setStatus(message);
+    } finally {
+      setLoading(false);
+      if (nextRemaining === 0) {
+        setChatNotice("無料枠を使い切りました。プラン選択に進む想定です。");
+      }
     }
+
   };
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setStatus("");
 
     if (!file) {
       setSelectedFile(null);
+      setSelectedFileData(null);
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
       setStatus("ファイルは8MB以下にしてください。");
       setSelectedFile(null);
+      setSelectedFileData(null);
       event.target.value = "";
       return;
     }
 
     setSelectedFile(file);
+    try {
+      const base64 = await readFileAsBase64(file);
+      setSelectedFileData({
+        name: file.name,
+        base64,
+        mimeType: file.type || "application/octet-stream",
+      });
+    } catch {
+      setStatus("ファイルの読み込みに失敗しました。もう一度お試しください。");
+      setSelectedFile(null);
+      setSelectedFileData(null);
+      event.target.value = "";
+    }
   };
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
@@ -217,7 +337,7 @@ function WorkspacePageContent() {
     setIsDragging(false);
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
 
@@ -229,16 +349,30 @@ function WorkspacePageContent() {
     if (file.size > MAX_FILE_SIZE) {
       setStatus("ファイルは8MB以下にしてください。");
       setSelectedFile(null);
+      setSelectedFileData(null);
       return;
     }
 
     setSelectedFile(file);
+    try {
+      const base64 = await readFileAsBase64(file);
+      setSelectedFileData({
+        name: file.name,
+        base64,
+        mimeType: file.type || "application/octet-stream",
+      });
+    } catch {
+      setStatus("ファイルの読み込みに失敗しました。もう一度お試しください。");
+      setSelectedFile(null);
+      setSelectedFileData(null);
+    }
   };
 
   const resetMessages = () => {
     setMessages(initialMessages);
     setInput("");
     setChatNotice("");
+    setStatus("");
   };
 
   const openFilePicker = () => {
@@ -295,11 +429,11 @@ function WorkspacePageContent() {
         <div className="container">
           <div className="diagnosis-hero-box">
             <div>
-              <p className="diagnosis-eyebrow">ワークスペース（ダミー）</p>
+              <p className="diagnosis-eyebrow">ワークスペース（試験版）</p>
               <h1 className="diagnosis-title">資料アップロード + チャットの骨組み</h1>
               <p className="diagnosis-lead">
                 「無料診断を開始」で開くポップを参考に、1画面へまとめた試作ページです。
-                現時点では見た目と配置だけを確認できます。
+                チャットはGeminiに接続済みで実際の返答が返ります。無料枠や決済はまだ表示のみです。
               </p>
               <div className="diagnosis-hero-actions">
                 <span className="diagnosis-url">URL: /workspace</span>
@@ -358,8 +492,8 @@ function WorkspacePageContent() {
                   <p className="diagnosis-eyebrow">資料アップロード枠</p>
                   <h2 className="diagnosis-panel-title">図面や見積もりの添付</h2>
                   <p className="diagnosis-panel-desc">
-                    後続でAI処理に渡す想定の枠です。今は見た目のみで動きます。
-                    PDFや画像をドラッグ＆ドロップ、またはクリックで選択できます。
+                    添付したPDFや画像もGeminiに渡します。ファイル保存や残数管理はまだ仮のままです。
+                    ドラッグ＆ドロップ、またはクリックで選択できます。
                   </p>
                 </div>
                 {selectedFile ? (
@@ -415,26 +549,26 @@ function WorkspacePageContent() {
               <div className="diagnosis-panel-head">
                 <div>
                   <p className="diagnosis-eyebrow">チャット枠</p>
-                  <h2 className="diagnosis-panel-title">AIとのやりとり（ダミー）</h2>
+                  <h2 className="diagnosis-panel-title">AIとのやりとり（Gemini接続）</h2>
                   <p className="diagnosis-panel-desc">
                     ポップで表示していたチャット画面をそのままページ化しています。
-                    送信すると仮の回答が返るだけの簡易表示です。
+                    Gemini 2.5 Proに送信し、そのまま回答が返ります。無料枠カウントは表示のみです。
                   </p>
                 </div>
-                <span className="diagnosis-chip ghost">表示確認用</span>
+                <span className="diagnosis-chip ghost">AI応答確認中</span>
               </div>
 
               <div className="chat-usage">
                 <div className="chat-usage-info">
                   <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
-                    残り {remainingFree} / {FREE_LIMIT} 回（ダミー）
+                    残り {remainingFree} / {FREE_LIMIT} 回（カウントのみダミー）
                   </span>
                   <p className="chat-usage-note">
                     送信するたびに1回減ります。実際はサーバーの残数と連動させます。
                   </p>
                 </div>
                 <span className="chat-usage-chip">
-                  {isQuotaEmpty ? "プラン案内に切り替えます" : "無料3回までの表示テスト中"}
+                  {isQuotaEmpty ? "プラン案内に切り替えます" : "AI応答は本番（GREEN固定）、無料枠は表示のみ"}
                 </span>
               </div>
 
@@ -465,7 +599,7 @@ function WorkspacePageContent() {
                   </div>
                 ))}
                 {messages.length === 0 && (
-                  <div className="chat-empty">ここにダミーの会話が並びます。</div>
+                  <div className="chat-empty">ここにこれまでの会話が並びます。</div>
                 )}
               </div>
 
@@ -473,23 +607,23 @@ function WorkspacePageContent() {
                 <div className="chat-input-header">
                   <span className="status-dot" />
                   <p className="chat-hint">
-                    実際の処理は未接続です。見た目とレイアウトの確認だけ行えます。
+                    Geminiに接続済みです。無料枠や決済のカウントはまだダミー表示です。
                   </p>
                 </div>
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                   rows={3}
-                  placeholder="ここに送信したい内容を入力（ダミー返信が返ります）"
+                  placeholder="ここに送信したい内容を入力（Geminiが返答します）"
                 />
                 <div className="chat-actions">
                   <button
                     type="button"
                     className="btn btn-primary"
                     onClick={handleSend}
-                    disabled={!input.trim() || isQuotaEmpty}
+                    disabled={!input.trim() || isQuotaEmpty || loading}
                   >
-                    {isQuotaEmpty ? "残り0回のため送信不可" : "送信"}
+                    {isQuotaEmpty ? "残り0回のため送信不可" : loading ? "送信中..." : "送信"}
                   </button>
                   <button type="button" className="btn btn-secondary" onClick={resetMessages}>
                     履歴をリセット
