@@ -640,23 +640,7 @@ function WorkspacePageContent() {
             </section>
 
             <section className="diagnosis-panel">
-              <div className="diagnosis-panel-head">
-                <div>
-                  <p className="diagnosis-eyebrow">チャット入力欄</p>
-                  <h2 className="diagnosis-panel-title">メッセージ送信</h2>
-                  <p className="diagnosis-panel-desc">
-                    上のチャットに表示されるやりとりをここから送ります。添付がなくても送信できます。
-                  </p>
-                </div>
-              </div>
-
               <div className="chat-input-area">
-                <div className="chat-input-header">
-                  <span className="status-dot" />
-                  <p className="chat-hint">
-                    Geminiに接続済みです。無料枠や決済のカウントはまだダミー表示です。
-                  </p>
-                </div>
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
@@ -675,11 +659,6 @@ function WorkspacePageContent() {
                   <button type="button" className="btn btn-secondary" onClick={resetMessages}>
                     履歴をリセット
                   </button>
-                  {selectedFile ? (
-                    <span className="chat-inline-note">添付予定: {selectedFile.name}</span>
-                  ) : (
-                    <span className="chat-inline-note">添付なしのまま送信できます。</span>
-                  )}
                   {isQuotaEmpty && (
                     <Link href="/checkout/plan" className="btn btn-secondary">
                       プランを確認（ダミー）
