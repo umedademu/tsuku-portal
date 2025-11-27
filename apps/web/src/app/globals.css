@@ -1936,7 +1936,7 @@ img {
     radial-gradient(circle at 90% 8%, rgba(124, 58, 237, 0.05) 0%, transparent 28%),
     var(--color-bg-main);
   min-height: 100vh;
-  padding: 72px 0 96px;
+  padding: 28px 0 96px;
 }
 
 .diagnosis-hero {
