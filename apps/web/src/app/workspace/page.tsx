@@ -70,7 +70,7 @@ const splitChatBlocks = (rawText: string): ChatBlock[] => {
   const lines = normalized
     .split(/\n+/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter((line) => line && !/^#+$/.test(line));
 
   const blocks: ChatBlock[] = [];
 
