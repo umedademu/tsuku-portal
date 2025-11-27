@@ -8,6 +8,8 @@ export const metadata: Metadata = {
     "Stripeでの決済後にサーバーへ状態を反映し、診断ページへ戻れるようにします。",
 };
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   searchParams?: {
     session_id?: string;
