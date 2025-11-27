@@ -36,6 +36,15 @@ const toIso = (seconds: number | null | undefined) =>
     ? new Date(seconds * 1000).toISOString()
     : null;
 
+const getCurrentPeriodEnd = (subscription: Stripe.Subscription | string | null) => {
+  if (!subscription || typeof subscription === "string") return null;
+
+  const legacyValue = (subscription as { current_period_end?: number }).current_period_end;
+  const itemValue = subscription.items?.data?.[0]?.current_period_end;
+  const seconds = typeof legacyValue === "number" ? legacyValue : itemValue;
+  return toIso(seconds);
+};
+
 export async function POST(request: Request) {
   if (!stripe) {
     return NextResponse.json(
@@ -128,8 +137,7 @@ export async function POST(request: Request) {
   const subscriptionStatus = normalizeStatus(
     typeof subscription === "string" ? null : subscription?.status,
   );
-  const currentPeriodEnd =
-    typeof subscription === "string" ? null : toIso(subscription?.current_period_end);
+  const currentPeriodEnd = getCurrentPeriodEnd(subscription);
   const cancelAt = typeof subscription === "string" ? null : toIso(subscription?.cancel_at);
   const customerId =
     typeof session.customer === "string"
