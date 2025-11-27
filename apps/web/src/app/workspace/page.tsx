@@ -604,18 +604,6 @@ function WorkspacePageContent() {
             </section>
 
             <section className="diagnosis-panel">
-              <div className="diagnosis-panel-head">
-                <div>
-                  <p className="diagnosis-eyebrow">資料アップロード枠</p>
-                  <h2 className="diagnosis-panel-title">図面や見積もりの添付</h2>
-                  <p className="diagnosis-panel-desc">
-                    添付したPDFや画像もGeminiに渡します。ファイル保存や残数管理はまだ仮のままです。
-                    ドラッグ＆ドロップ、またはクリックで選択できます。
-                  </p>
-                </div>
-                {selectedFile && <span className="diagnosis-chip">選択済み</span>}
-              </div>
-
               <div
                 className={`upload-area ${isDragging ? "dragging" : ""} ${selectedFile ? "has-file" : ""}`}
                 onDragOver={handleDragOver}
@@ -641,19 +629,12 @@ function WorkspacePageContent() {
                     </div>
                   ) : (
                     <div className="upload-text">
+                      <p className="upload-label">資料アップロード枠</p>
                       <p className="upload-label">ここにドラッグ＆ドロップ</p>
-                      <span className="upload-hint">クリックでも選択できます（8MBまで）</span>
+                      <span className="upload-hint">想定ファイル: PDF / 画像</span>
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="diagnosis-meta">
-                <span>想定ファイル: PDF / 画像</span>
-                {selectedFile ? (
-                  <span className="meta-accent">現在: {selectedFile.name}</span>
-                ) : (
-                  <span className="meta-muted">添付なし</span>
-                )}
               </div>
               {status && <p className="diagnosis-status">{status}</p>}
             </section>
