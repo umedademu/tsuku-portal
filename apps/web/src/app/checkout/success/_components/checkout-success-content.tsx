@@ -56,7 +56,11 @@ const shorten = (value: string | null | undefined) => {
   return value.length <= 10 ? value : `...${value.slice(-6)}`;
 };
 
-export default function CheckoutSuccessContent({ sessionId }: { sessionId: string | null }) {
+export default function CheckoutSuccessContent({
+  sessionId: initialSessionId,
+}: {
+  sessionId: string | null;
+}) {
   const [loading, setLoading] = useState(true);
   const [statusTone, setStatusTone] = useState<Tone>("info");
   const [statusText, setStatusText] = useState("決済内容を確認しています...");
@@ -67,6 +71,20 @@ export default function CheckoutSuccessContent({ sessionId }: { sessionId: strin
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
+
+  useEffect(() => {
+    if (initialSessionId) {
+      setSessionId(initialSessionId);
+      return;
+    }
+
+    const fromUrl =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("session_id")
+        : null;
+    setSessionId(fromUrl || null);
+  }, [initialSessionId]);
 
   useEffect(() => {
     if (!sessionId) {
