@@ -93,10 +93,11 @@ export default function CheckoutSuccessContent({ sessionId }: { sessionId: strin
 
         if (!response.ok || !data || data.ok !== true) {
           setStatusTone("error");
-          setStatusText(
-            data?.error ||
-              "状態の反映に失敗しました。時間をおいて再度お試しください。",
-          );
+          const message =
+            data && "error" in data && typeof data.error === "string" && data.error
+              ? data.error
+              : "状態の反映に失敗しました。時間をおいて再度お試しください。";
+          setStatusText(message);
           return;
         }
 
