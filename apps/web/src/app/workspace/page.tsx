@@ -561,6 +561,48 @@ function WorkspacePageContent() {
       <main className="diagnosis-main">
         <div className="container">
           <div className="diagnosis-grid">
+            <section className="diagnosis-panel chat-panel">
+              <div className="diagnosis-panel-head">
+                <h2 className="diagnosis-panel-title">診断AI</h2>
+              </div>
+
+              {isQuotaEmpty && (
+                <div className="plan-callout">
+                  <div>
+                    <p className="plan-callout-title">無料分は0回になりました</p>
+                    <p className="plan-callout-text">
+                      今は案内だけです。この状態でプラン選択ページ（/checkout/plan）へ進む動きに差し替える予定です。
+                    </p>
+                  </div>
+                  <Link href="/checkout/plan" className="btn btn-primary">
+                    プランを選ぶ（ダミー）
+                  </Link>
+                </div>
+              )}
+
+              {chatNotice && <p className="chat-notice">{chatNotice}</p>}
+
+              <div className="chat-messages">
+                {messages.map((message, index) => (
+                  <div
+                    key={`${message.role}-${index}-${message.text.slice(0, 6)}`}
+                    className={`chat-message ${message.role}`}
+                  >
+                    <div className="chat-meta">{message.role === "ai" ? "AI" : "ユーザー"}</div>
+                    {message.role === "ai" ? (
+                      renderAiText(message.text)
+                    ) : (
+                      <div className="chat-text">{message.text}</div>
+                    )}
+                  </div>
+                ))}
+                {messages.length === 0 && (
+                  <div className="chat-empty">ここにこれまでの会話が並びます。</div>
+                )}
+              </div>
+
+            </section>
+
             <section className="diagnosis-panel">
               <div className="diagnosis-panel-head">
                 <div>
@@ -571,11 +613,7 @@ function WorkspacePageContent() {
                     ドラッグ＆ドロップ、またはクリックで選択できます。
                   </p>
                 </div>
-                {selectedFile ? (
-                  <span className="diagnosis-chip">選択済み</span>
-                ) : (
-                  <span className="diagnosis-chip ghost">任意</span>
-                )}
+                {selectedFile && <span className="diagnosis-chip">選択済み</span>}
               </div>
 
               <div
@@ -620,52 +658,15 @@ function WorkspacePageContent() {
               {status && <p className="diagnosis-status">{status}</p>}
             </section>
 
-            <section className="diagnosis-panel chat-panel">
+            <section className="diagnosis-panel">
               <div className="diagnosis-panel-head">
                 <div>
-                  <p className="diagnosis-eyebrow">チャット枠</p>
-                  <h2 className="diagnosis-panel-title">AIとのやりとり（Gemini接続）</h2>
+                  <p className="diagnosis-eyebrow">チャット入力欄</p>
+                  <h2 className="diagnosis-panel-title">メッセージ送信</h2>
                   <p className="diagnosis-panel-desc">
-                    ポップで表示していたチャット画面をそのままページ化しています。
-                    Gemini 2.5 Proに送信し、そのまま回答が返ります。無料枠カウントは表示のみです。
+                    上のチャットに表示されるやりとりをここから送ります。添付がなくても送信できます。
                   </p>
                 </div>
-                <span className="diagnosis-chip ghost">AI応答確認中</span>
-              </div>
-
-              {isQuotaEmpty && (
-                <div className="plan-callout">
-                  <div>
-                    <p className="plan-callout-title">無料分は0回になりました</p>
-                    <p className="plan-callout-text">
-                      今は案内だけです。この状態でプラン選択ページ（/checkout/plan）へ進む動きに差し替える予定です。
-                    </p>
-                  </div>
-                  <Link href="/checkout/plan" className="btn btn-primary">
-                    プランを選ぶ（ダミー）
-                  </Link>
-                </div>
-              )}
-
-              {chatNotice && <p className="chat-notice">{chatNotice}</p>}
-
-              <div className="chat-messages">
-                {messages.map((message, index) => (
-                  <div
-                    key={`${message.role}-${index}-${message.text.slice(0, 6)}`}
-                    className={`chat-message ${message.role}`}
-                  >
-                    <div className="chat-meta">{message.role === "ai" ? "AI" : "ユーザー"}</div>
-                    {message.role === "ai" ? (
-                      renderAiText(message.text)
-                    ) : (
-                      <div className="chat-text">{message.text}</div>
-                    )}
-                  </div>
-                ))}
-                {messages.length === 0 && (
-                  <div className="chat-empty">ここにこれまでの会話が並びます。</div>
-                )}
               </div>
 
               <div className="chat-input-area">

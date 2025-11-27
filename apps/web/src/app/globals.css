@@ -2126,16 +2126,63 @@ img {
 
 .diagnosis-grid {
   margin-top: 1.5rem;
-  display: grid;
-  grid-template-columns: 1fr 1.4fr;
+  display: flex;
+  flex-direction: column;
   gap: 1.25rem;
-  align-items: start;
 }
 
-@media (max-width: 1024px) {
-  .diagnosis-grid {
-    grid-template-columns: 1fr;
-  }
+.diagnosis-page {
+  font-size: 0.88rem;
+}
+
+.diagnosis-page .diagnosis-panel-title {
+  font-size: 0.96rem;
+}
+
+.diagnosis-page .diagnosis-eyebrow {
+  font-size: 0.72rem;
+}
+
+.diagnosis-page .diagnosis-panel-desc {
+  font-size: 0.88rem;
+  line-height: 1.48;
+}
+
+.diagnosis-page .diagnosis-meta {
+  font-size: 0.82rem;
+}
+
+.diagnosis-page .chat-message,
+.diagnosis-page .chat-rich-text {
+  font-size: 0.82rem;
+  line-height: 1.44;
+}
+
+.diagnosis-page .chat-text {
+  font-size: 0.82rem;
+  line-height: 1.44;
+}
+
+.diagnosis-page .chat-heading {
+  font-size: 0.92rem;
+}
+
+.diagnosis-page .chat-paragraph,
+.diagnosis-page .chat-list {
+  font-size: 0.82rem;
+  line-height: 1.44;
+}
+
+.diagnosis-page .chat-hint {
+  font-size: 0.82rem;
+}
+
+.diagnosis-page .chat-inline-note {
+  font-size: 0.82rem;
+}
+
+.diagnosis-page .chat-input-area textarea {
+  font-size: 0.88rem;
 }
 
 .diagnosis-panel {
@@ -2218,6 +2265,10 @@ img {
 
 .diagnosis-panel .chat-messages {
   margin-top: 0.25rem;
+}
+
+.chat-panel .chat-messages {
+  min-height: 420px;
 }
 
 .diagnosis-panel .chat-input-area {
