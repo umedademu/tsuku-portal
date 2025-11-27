@@ -2131,6 +2131,33 @@ img {
   gap: 1.25rem;
 }
 
+.diagnosis-row {
+  display: flex;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.upload-panel {
+  flex: 0 0 30%;
+  min-width: 260px;
+}
+
+.chat-input-panel {
+  flex: 1;
+}
+
+@media (max-width: 960px) {
+  .diagnosis-row {
+    flex-direction: column;
+  }
+
+  .upload-panel,
+  .chat-input-panel {
+    min-width: auto;
+    flex: 1;
+  }
+}
+
 .diagnosis-page {
   font-size: 0.88rem;
 }
