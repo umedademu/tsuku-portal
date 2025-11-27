@@ -521,22 +521,12 @@ function WorkspacePageContent() {
     fileInputRef.current?.click();
   };
 
-  const authHeadline = !authReady
-    ? "ログイン状態を確認しています..."
-    : userEmail
-      ? `${userEmail} でログイン中です`
-      : "まだログインしていません";
-
-  const authDescription = authStateMessage
-    ? authStateMessage
-    : !authReady
-      ? "確認中です。少しお待ちください。"
-      : userEmail
-        ? "このまま診断を進められます。"
-        : "ログインが必要です。トップページに戻って再度お試しください。";
-  const usedFree = FREE_LIMIT - remainingFree;
   const isQuotaEmpty = remainingFree <= 0;
-  const usageRate = Math.min(100, Math.round((usedFree / FREE_LIMIT) * 100));
+  const compactAuthText = !authReady
+    ? "ログイン確認中です..."
+    : userEmail
+      ? `${userEmail} でログイン中`
+      : "未ログインのためトップに戻ります";
 
   return (
     <div className="diagnosis-page">
@@ -567,63 +557,6 @@ function WorkspacePageContent() {
           </div>
         </div>
       )}
-      <header className="diagnosis-hero">
-        <div className="container">
-          <div className="diagnosis-hero-box">
-            <div>
-              <p className="diagnosis-eyebrow">ワークスペース（試験版）</p>
-              <h1 className="diagnosis-title">資料アップロード + チャットの骨組み</h1>
-              <p className="diagnosis-lead">
-                「無料診断を開始」で開くポップを参考に、1画面へまとめた試作ページです。
-                チャットはGeminiに接続済みで実際の返答が返ります。無料枠や決済はまだ表示のみです。
-              </p>
-              <div className="diagnosis-hero-actions">
-                <span className="diagnosis-url">URL: /workspace</span>
-                <Link href="/" className="btn btn-secondary">
-                  トップへ戻る
-                </Link>
-              </div>
-              <div className="auth-state-banner">
-                <div className="auth-state-texts">
-                  <p className="auth-state-label">ログイン状態</p>
-                  <p className="auth-state-main">{authHeadline}</p>
-                  <p className={`auth-state-note ${authStateMessage ? "error" : ""}`}>{authDescription}</p>
-                </div>
-                <div className="auth-state-actions">
-                  {userEmail && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={handleLogout}
-                      disabled={loggingOut}
-                    >
-                      {loggingOut ? "ログアウト中..." : "ログアウト"}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="usage-banner">
-                <div className="usage-texts">
-                  <p className="diagnosis-eyebrow">無料診断の残り（ダミー表示）</p>
-                  <p className="usage-main">
-                    あと <strong>{remainingFree}</strong> / {FREE_LIMIT} 回
-                  </p>
-                  <p className={`usage-note ${isQuotaEmpty ? "alert" : ""}`}>
-                    送信するたびに1回減ります。ページを閉じると元に戻ります。
-                  </p>
-                  <p className="usage-note">本実装ではサーバーの値と連動させます。</p>
-                </div>
-                <div className="usage-meter" aria-label="無料枠の進捗">
-                  <div className="usage-meter-track">
-                    <div className="usage-meter-bar" style={{ width: `${usageRate}%` }} />
-                  </div>
-                  <span className="usage-meter-caption">消化 {usedFree} / {FREE_LIMIT}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
 
       <main className="diagnosis-main">
         <div className="container">
@@ -700,20 +633,6 @@ function WorkspacePageContent() {
                 <span className="diagnosis-chip ghost">AI応答確認中</span>
               </div>
 
-              <div className="chat-usage">
-                <div className="chat-usage-info">
-                  <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
-                    残り {remainingFree} / {FREE_LIMIT} 回（カウントのみダミー）
-                  </span>
-                  <p className="chat-usage-note">
-                    送信するたびに1回減ります。実際はサーバーの残数と連動させます。
-                  </p>
-                </div>
-                <span className="chat-usage-chip">
-                  {isQuotaEmpty ? "プラン案内に切り替えます" : "AI応答は本番（GREEN固定）、無料枠は表示のみ"}
-                </span>
-              </div>
-
               {isQuotaEmpty && (
                 <div className="plan-callout">
                   <div>
@@ -784,6 +703,33 @@ function WorkspacePageContent() {
                       プランを確認（ダミー）
                     </Link>
                   )}
+                </div>
+                <div className="chat-bottom-info">
+                  <div className="chat-bottom-row">
+                    <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
+                      残り {remainingFree} / {FREE_LIMIT} 回（ダミー）
+                    </span>
+                    <span className="chat-bottom-note">
+                      送信するたびに1回減ります。ページを閉じると元に戻ります。
+                    </span>
+                  </div>
+                  <div className="chat-bottom-row">
+                    <div className="chat-auth-inline">
+                      <span className="chat-auth-label">ログイン</span>
+                      <span className="chat-auth-main">{compactAuthText}</span>
+                      {authStateMessage && <span className="chat-auth-note">{authStateMessage}</span>}
+                    </div>
+                    {userEmail && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-compact"
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                      >
+                        {loggingOut ? "ログアウト中..." : "ログアウト"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </section>

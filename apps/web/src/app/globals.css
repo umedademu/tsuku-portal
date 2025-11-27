@@ -2302,6 +2302,58 @@ img {
   font-weight: 700;
 }
 
+.chat-bottom-info {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #e2e8f0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.chat-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.chat-bottom-note {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.chat-auth-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chat-auth-label {
+  font-weight: 800;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.chat-auth-main {
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.chat-auth-note {
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.btn-compact {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+}
+
 /* Checkout Plan Page */
 .plan-page {
   background:
