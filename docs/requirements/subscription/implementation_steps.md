@@ -47,7 +47,12 @@
 - Stripe の API バージョン指定は外し、成功/キャンセル後の戻り先 `/checkout/success` / `/checkout/cancel` を追加した（状態反映は次ステップ）。
 - 環境変数は `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` / `STRIPE_SECRET_KEY` / `STRIPE_PRICE_BLUE` / `STRIPE_PRICE_GREEN` / `STRIPE_PRICE_GOLD` を利用する（Vercel側にも設定が必要）。
 
-## ステップ10：決済成功後の状態反映（未実装）
+## ステップ10：決済成功後の状態反映（完了）
+- Stripe Checkout から戻った `/checkout/success` でセッションIDを受け取り、`/api/checkout/confirm` に投げてStripe上の決済内容を検証するようにした。
+- 検証結果を Supabase に保存するようにした（`checkout_sessions` / `user_profiles` / `usage_counts`）。プラン種別・サブスク状態・customer_id / subscription_id を記録する。
+- 成功ページは動的レンダリングに切り替え、サーバーからセッションIDが取れない場合でもクエリから拾って反映するようにした。
+- 画面ではプランとサブスク状態、次回更新目安、ID末尾などを表示し、診断ページへの導線を維持する。
+- まだ未実装: Webhookによる継続課金・解約の自動反映、無料枠カウントとの連動（`usage_counts` は保存のみで未連動）。後続で対応する。
 
 ## 要件整理
 - プランごとにプロンプトが異なる（blue / green / gold は `docs/prompts` および `prompts_json.txt` を参照）。
