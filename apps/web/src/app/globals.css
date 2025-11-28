@@ -2266,6 +2266,10 @@ img {
   gap: 1rem;
 }
 
+.chat-panel {
+  min-height: calc(100vh - 380px);
+}
+
 .diagnosis-panel-head {
   display: flex;
   justify-content: space-between;
@@ -2338,7 +2342,10 @@ img {
 }
 
 .chat-panel .chat-messages {
-  height: 420px;
+  flex: 1 1 auto;
+  min-height: 520px;
+  height: auto;
+  max-height: none;
   overflow-y: auto;
 }
 
