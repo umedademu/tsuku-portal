@@ -52,6 +52,7 @@ type ChatBlock =
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const FREE_LIMIT = 3;
 const CURRENT_PLAN = "green";
+const MIN_TEXTAREA_HEIGHT = 48;
 
 const normalizeAiText = (text: string) =>
   text
@@ -256,6 +257,8 @@ function WorkspacePageContent() {
   const authParam = searchParams.get("auth");
   const searchParamsString = searchParams.toString();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -339,6 +342,20 @@ function WorkspacePageContent() {
     if (userEmail) return;
     router.replace("/");
   }, [authReady, router, userEmail]);
+
+  useEffect(() => {
+    const area = chatMessagesRef.current;
+    if (!area) return;
+    area.scrollTop = area.scrollHeight;
+  }, [messages]);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const nextHeight = Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT);
+    textarea.style.height = `${nextHeight}px`;
+  }, [input]);
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -599,7 +616,7 @@ function WorkspacePageContent() {
 
               {chatNotice && <p className="chat-notice">{chatNotice}</p>}
 
-              <div className="chat-messages">
+              <div className="chat-messages" ref={chatMessagesRef}>
                 {messages.map((message, index) => (
                   <div
                     key={`${message.role}-${index}-${message.text.slice(0, 6)}`}
@@ -660,9 +677,10 @@ function WorkspacePageContent() {
               <section className="diagnosis-panel chat-input-panel">
                 <div className="chat-input-area">
                   <textarea
+                    ref={textareaRef}
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
-                    rows={3}
+                    rows={1}
                     placeholder="ここに送信したい内容を入力（Geminiが返答します）"
                   />
                   <div className="chat-actions">
