@@ -564,6 +564,19 @@ function WorkspacePageContent() {
             <section className="diagnosis-panel chat-panel">
               <div className="diagnosis-panel-head">
                 <h2 className="diagnosis-panel-title">診断AI</h2>
+                <div className="chat-auth-inline">
+                  {userEmail && <span className="chat-auth-main">{userEmail}</span>}
+                  {userEmail && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-compact"
+                      onClick={handleLogout}
+                      disabled={loggingOut}
+                    >
+                      {loggingOut ? "ログアウト中..." : "ログアウト"}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {isQuotaEmpty && (
@@ -649,44 +662,25 @@ function WorkspacePageContent() {
                     placeholder="ここに送信したい内容を入力（Geminiが返答します）"
                   />
                   <div className="chat-actions">
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleSend}
-                      disabled={!input.trim() || isQuotaEmpty || loading}
-                    >
-                      {isQuotaEmpty ? "残り0回のため送信不可" : loading ? "送信中..." : "送信"}
-                    </button>
-                    <button type="button" className="btn btn-secondary" onClick={resetMessages}>
-                      履歴をリセット
-                    </button>
-                    {isQuotaEmpty && (
-                      <Link href="/checkout/plan" className="btn btn-secondary">
-                        プランを確認（ダミー）
-                      </Link>
-                    )}
-                  </div>
-                  <div className="chat-bottom-info">
-                  <div className="chat-bottom-row">
                     <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
                       残り {remainingFree} / {FREE_LIMIT} 回（ダミー）
                     </span>
-                  </div>
-                  <div className="chat-bottom-row">
-                      <div className="chat-auth-inline">
-                        <span className="chat-auth-label">ログイン</span>
-                        <span className="chat-auth-main">{compactAuthText}</span>
-                        {authStateMessage && <span className="chat-auth-note">{authStateMessage}</span>}
-                      </div>
-                      {userEmail && (
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-compact"
-                          onClick={handleLogout}
-                          disabled={loggingOut}
-                        >
-                          {loggingOut ? "ログアウト中..." : "ログアウト"}
-                        </button>
+                    <div className="chat-actions-right">
+                      <button type="button" className="btn btn-secondary" onClick={resetMessages}>
+                        履歴をリセット
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleSend}
+                        disabled={!input.trim() || isQuotaEmpty || loading}
+                      >
+                        {isQuotaEmpty ? "残り0回のため送信不可" : loading ? "送信中..." : "送信"}
+                      </button>
+                      {isQuotaEmpty && (
+                        <Link href="/checkout/plan" className="btn btn-secondary">
+                          プランを確認（ダミー）
+                        </Link>
                       )}
                     </div>
                   </div>
