@@ -364,7 +364,10 @@ function WorkspacePageContent() {
 
   const handleSend = async () => {
     const body = input.trim();
-    if (!body || loading) return;
+    const hasBody = body.length > 0;
+    const hasFile = Boolean(selectedFile);
+
+    if ((!hasBody && !hasFile) || loading) return;
     if (remainingFree <= 0) {
       setChatNotice("無料枠が0回になっています。プラン選択ページに進む想定です。");
       return;
@@ -374,9 +377,10 @@ function WorkspacePageContent() {
       return;
     }
 
+    const mainText = hasBody ? body : "添付ファイルのみ送信します。内容を確認してください。";
     const text = selectedFile
-      ? `${body}\n\n【添付ファイル】${selectedFile.name}`
-      : body;
+      ? `${mainText}\n\n【添付ファイル】${selectedFile.name}`
+      : mainText;
     const nextRemaining = Math.max(remainingFree - 1, 0);
     const firstUserIndex = messages.findIndex((message) => message.role === "user");
     const historySource =
@@ -673,7 +677,7 @@ function WorkspacePageContent() {
                         type="button"
                         className="btn btn-primary"
                         onClick={handleSend}
-                        disabled={!input.trim() || isQuotaEmpty || loading}
+                        disabled={(!input.trim() && !selectedFile) || isQuotaEmpty || loading}
                       >
                         {isQuotaEmpty ? "残り0回のため送信不可" : loading ? "送信中..." : "送信"}
                       </button>
