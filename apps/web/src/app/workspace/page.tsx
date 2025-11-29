@@ -17,6 +17,7 @@ import { supabaseBrowserClient } from "@/lib/supabase-client";
 type ChatMessage = {
   role: "user" | "ai";
   text: string;
+  pending?: boolean;
 };
 
 type AuthNotice = {
@@ -460,11 +461,15 @@ function WorkspacePageContent() {
       });
     }
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      { role: "ai", text: "Loading...", pending: true },
+    ]);
     setInput("");
     setRemainingFree(nextRemaining);
     setChatNotice("");
-    setStatus("AIが回答を作成しています...");
+    setStatus("");
     setLoading(true);
 
     try {
@@ -482,13 +487,17 @@ function WorkspacePageContent() {
       if (!res.ok) {
         throw new Error(data.error || "AIからの回答取得に失敗しました。");
       }
-      setMessages((prev) => [...prev, { role: "ai", text: data.message as string }]);
+      setMessages((prev) => [
+        ...prev.filter((message) => !message.pending),
+        { role: "ai", text: data.message as string },
+      ]);
       setStatus("");
     } catch (error) {
       const message =
         error instanceof Error && error.message
           ? error.message
           : "AIの回答生成に失敗しました。";
+      setMessages((prev) => prev.filter((message) => !message.pending));
       setStatus(message);
     } finally {
       setLoading(false);
