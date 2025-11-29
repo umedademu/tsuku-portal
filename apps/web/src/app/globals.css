@@ -1872,6 +1872,7 @@ img {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: var(--radius-lg);
+  position: relative;
 }
 
 .chat-input-header {
@@ -1891,8 +1892,9 @@ img {
   font-size: 1rem;
   line-height: 1.5;
   resize: none;
-  overflow-y: auto;
+  overflow-y: hidden;
   min-height: 44px;
+  max-height: calc(1.5em * 8 + 2rem);
   box-shadow: var(--shadow-xs);
 }
 

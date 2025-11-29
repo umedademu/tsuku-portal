@@ -53,6 +53,7 @@ const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const FREE_LIMIT = 3;
 const CURRENT_PLAN = "green";
 const MIN_TEXTAREA_HEIGHT = 48;
+const MAX_TEXTAREA_LINES = 8;
 
 const normalizeAiText = (text: string) =>
   text
@@ -259,6 +260,10 @@ function WorkspacePageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatInputAreaRef = useRef<HTMLDivElement>(null);
+  const baseTextareaHeightRef = useRef<number | null>(null);
+  const baseInputMarginTopRef = useRef<number | null>(null);
+  const baseInputHeightRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -351,10 +356,48 @@ function WorkspacePageContent() {
 
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (!textarea) return;
+    const inputArea = chatInputAreaRef.current;
+    if (!textarea || !inputArea) return;
+
     textarea.style.height = "auto";
-    const nextHeight = Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT);
+
+    const textareaStyle = window.getComputedStyle(textarea);
+    const lineHeight = parseFloat(textareaStyle.lineHeight) || 24;
+    const paddingTop = parseFloat(textareaStyle.paddingTop) || 0;
+    const paddingBottom = parseFloat(textareaStyle.paddingBottom) || 0;
+    const borderTop = parseFloat(textareaStyle.borderTopWidth) || 0;
+    const borderBottom = parseFloat(textareaStyle.borderBottomWidth) || 0;
+    const maxHeight =
+      lineHeight * MAX_TEXTAREA_LINES +
+      paddingTop +
+      paddingBottom +
+      borderTop +
+      borderBottom;
+
+    const nextHeight = Math.min(Math.max(textarea.scrollHeight, MIN_TEXTAREA_HEIGHT), maxHeight);
     textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+
+    if (baseTextareaHeightRef.current === null) {
+      baseTextareaHeightRef.current = nextHeight;
+    }
+    if (baseInputMarginTopRef.current === null) {
+      const inputAreaStyle = window.getComputedStyle(inputArea);
+      baseInputMarginTopRef.current = parseFloat(inputAreaStyle.marginTop) || 0;
+    }
+    if (baseInputHeightRef.current === null) {
+      baseInputHeightRef.current = inputArea.getBoundingClientRect().height;
+    }
+
+    const baseHeight = baseTextareaHeightRef.current;
+    const extraHeight = Math.max(nextHeight - baseHeight, 0);
+    const baseMargin = baseInputMarginTopRef.current ?? 0;
+    const nextMargin = baseMargin - extraHeight;
+    inputArea.style.marginTop = `${nextMargin}px`;
+
+    const baseInputHeight = baseInputHeightRef.current ?? 0;
+    const nextInputHeight = baseInputHeight + extraHeight;
+    inputArea.style.height = `${nextInputHeight}px`;
   }, [input]);
 
   const handleLogout = async () => {
@@ -675,7 +718,7 @@ function WorkspacePageContent() {
               </section>
 
               <section className="diagnosis-panel chat-input-panel">
-                <div className="chat-input-area">
+                <div className="chat-input-area" ref={chatInputAreaRef}>
                   <textarea
                     ref={textareaRef}
                     value={input}
