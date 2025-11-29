@@ -2176,13 +2176,24 @@ img {
   align-items: stretch;
 }
 
+.chat-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .upload-panel {
   flex: 0 0 30%;
   min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .chat-input-panel {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 960px) {
@@ -2353,6 +2364,10 @@ img {
 
 .diagnosis-panel .chat-input-area {
   margin-top: 1rem;
+}
+
+.chat-compose .chat-input-area {
+  margin-top: 0;
 }
 
 .chat-usage {

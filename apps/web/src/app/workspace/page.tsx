@@ -678,80 +678,81 @@ function WorkspacePageContent() {
                 )}
               </div>
 
-            </section>
-
-            <div className="diagnosis-row">
-              <section className="diagnosis-panel upload-panel">
-                <div
-                  className={`upload-area ${isDragging ? "dragging" : ""} ${selectedFile ? "has-file" : ""}`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={openFilePicker}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    onChange={handleFileChange}
-                    style={{ display: "none" }}
-                  />
-                  <div className="upload-content">
-                    <i
-                      className={`fas ${selectedFile ? "fa-check-circle" : "fa-cloud-upload-alt"}`}
-                      aria-hidden="true"
-                    />
-                    {selectedFile ? (
-                      <div className="upload-text">
-                        <p className="upload-filename">{selectedFile.name}</p>
-                        <span className="upload-hint">クリックして変更できます</span>
+              <div className="chat-compose">
+                <div className="diagnosis-row">
+                  <div className="upload-panel">
+                    <div
+                      className={`upload-area ${isDragging ? "dragging" : ""} ${selectedFile ? "has-file" : ""}`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={openFilePicker}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        onChange={handleFileChange}
+                        style={{ display: "none" }}
+                      />
+                      <div className="upload-content">
+                        <i
+                          className={`fas ${selectedFile ? "fa-check-circle" : "fa-cloud-upload-alt"}`}
+                          aria-hidden="true"
+                        />
+                        {selectedFile ? (
+                          <div className="upload-text">
+                            <p className="upload-filename">{selectedFile.name}</p>
+                            <span className="upload-hint">クリックして変更できます</span>
+                          </div>
+                        ) : (
+                          <div className="upload-text">
+                            <p className="upload-label">資料アップロード枠</p>
+                            <p className="upload-label">ここにドラッグ＆ドロップ</p>
+                            <span className="upload-hint">想定ファイル: PDF / 画像</span>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="upload-text">
-                        <p className="upload-label">資料アップロード枠</p>
-                        <p className="upload-label">ここにドラッグ＆ドロップ</p>
-                        <span className="upload-hint">想定ファイル: PDF / 画像</span>
-                      </div>
-                    )}
+                    </div>
+                    {status && <p className="diagnosis-status">{status}</p>}
                   </div>
-                </div>
-                {status && <p className="diagnosis-status">{status}</p>}
-              </section>
 
-              <section className="diagnosis-panel chat-input-panel">
-                <div className="chat-input-area" ref={chatInputAreaRef}>
-                  <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    rows={1}
-                    placeholder="ここに送信したい内容を入力（Geminiが返答します）"
-                  />
-                  <div className="chat-actions">
-                    <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
-                      残り {remainingFree} / {FREE_LIMIT} 回（ダミー）
-                    </span>
-                    <div className="chat-actions-right">
-                      <button type="button" className="btn btn-secondary" onClick={resetMessages}>
-                        履歴をリセット
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={handleSend}
-                        disabled={(!input.trim() && !selectedFile) || isQuotaEmpty || loading}
-                      >
-                        {isQuotaEmpty ? "残り0回のため送信不可" : loading ? "送信中..." : "送信"}
-                      </button>
-                      {isQuotaEmpty && (
-                        <Link href="/checkout/plan" className="btn btn-secondary">
-                          プランを確認（ダミー）
-                        </Link>
-                      )}
+                  <div className="chat-input-panel">
+                    <div className="chat-input-area" ref={chatInputAreaRef}>
+                      <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={(event) => setInput(event.target.value)}
+                        rows={1}
+                        placeholder="ここに送信したい内容を入力（Geminiが返答します）"
+                      />
+                      <div className="chat-actions">
+                        <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
+                          残り {remainingFree} / {FREE_LIMIT} 回（ダミー）
+                        </span>
+                        <div className="chat-actions-right">
+                          <button type="button" className="btn btn-secondary" onClick={resetMessages}>
+                            履歴をリセット
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handleSend}
+                            disabled={(!input.trim() && !selectedFile) || isQuotaEmpty || loading}
+                          >
+                            {isQuotaEmpty ? "残り0回のため送信不可" : loading ? "送信中..." : "送信"}
+                          </button>
+                          {isQuotaEmpty && (
+                            <Link href="/checkout/plan" className="btn btn-secondary">
+                              プランを確認（ダミー）
+                            </Link>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </section>
-            </div>
+              </div>
+            </section>
           </div>
         </div>
       </main>
