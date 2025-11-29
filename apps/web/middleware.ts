@@ -8,9 +8,15 @@ export async function middleware(request: NextRequest) {
 
   const { data, error } = await supabase.auth.getSession();
   const hasSession = !!data.session && !error;
+  const { pathname } = request.nextUrl;
 
-  if (!hasSession) {
+  if (pathname.startsWith("/workspace") && !hasSession) {
     const redirectUrl = new URL("/", request.url);
+    return NextResponse.redirect(redirectUrl, { status: 303 });
+  }
+
+  if (pathname === "/" && hasSession) {
+    const redirectUrl = new URL("/workspace", request.url);
     return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 
@@ -18,5 +24,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/workspace/:path*"],
+  matcher: ["/workspace/:path*", "/"],
 };
