@@ -84,16 +84,6 @@ const caseStudies = [
     result: "遅延ゼロ",
   },
 ];
-const regionKeywords = [
-  "戸建てリフォーム",
-  "マンション改修",
-  "工場・プラント",
-  "公共案件",
-  "造成・土木",
-  "BIM/CIM",
-  "コスト査定",
-  "工程最適化",
-];
 const sitemapLinks = [
   { label: "HOME", href: "#hero-cta-anchor" },
   { label: "選ばれる理由", href: "#why-ai" },
@@ -976,35 +966,6 @@ export default function Home() {
                   <p>{study.summary}</p>
                   <span>{study.result}</span>
                 </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section seo-links-section">
-          <div className="character-layer keyword-characters" aria-hidden="true">
-            <CharacterSticker
-              id="char9"
-              className="keyword-char keyword-char-1"
-              width={200}
-              height={200}
-              sizes="(max-width: 768px) 140px, 200px"
-            />
-            <CharacterSticker
-              id="char10"
-              className="keyword-char keyword-char-2"
-              width={190}
-              height={190}
-              sizes="(max-width: 768px) 140px, 190px"
-            />
-          </div>
-          <div className="container">
-            <h3 className="section-title text-center mb-8 text-xl">対応キーワード</h3>
-            <div className="keyword-cloud">
-              {regionKeywords.map((keyword) => (
-                <span className="keyword-pill" key={keyword}>
-                  {keyword}
-                </span>
               ))}
             </div>
           </div>
