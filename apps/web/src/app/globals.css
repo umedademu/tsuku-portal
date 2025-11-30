@@ -2489,6 +2489,86 @@ img {
   min-width: 0;
 }
 
+.chat-account {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.chat-account-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--color-text-main);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+}
+
+.chat-account-button:hover {
+  background: #eef2ff;
+  border-color: #cbd5e1;
+}
+
+.chat-account.open .chat-account-button {
+  border-color: var(--color-primary);
+  background: #eef2ff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.12);
+}
+
+.chat-account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  z-index: 5;
+}
+
+.chat-account-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.chat-account-menu button + button {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.7rem;
+}
+
+.chat-account-menu button:hover {
+  background: #f8fafc;
+  color: var(--color-text-main);
+}
+
+.chat-account-menu button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .chat-auth-label {
   font-weight: 800;
   color: var(--color-primary);

@@ -254,6 +254,7 @@ function WorkspacePageContent() {
   const [authReady, setAuthReady] = useState(false);
   const [authStateMessage, setAuthStateMessage] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const authParam = searchParams.get("auth");
@@ -265,6 +266,7 @@ function WorkspacePageContent() {
   const baseTextareaHeightRef = useRef<number | null>(null);
   const baseInputMarginTopRef = useRef<number | null>(null);
   const baseInputHeightRef = useRef<number | null>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -304,6 +306,25 @@ function WorkspacePageContent() {
       subscription?.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [accountMenuOpen]);
+
+  useEffect(() => {
+    setAccountMenuOpen(false);
+  }, [userEmail]);
 
   useEffect(() => {
     if (!authParam) return;
@@ -401,8 +422,13 @@ function WorkspacePageContent() {
     inputArea.style.height = `${nextInputHeight}px`;
   }, [input]);
 
+  const showMenuNotice = (text: string) => {
+    setChatNotice(text);
+  };
+
   const handleLogout = async () => {
     if (loggingOut) return;
+    setAccountMenuOpen(false);
     setLoggingOut(true);
     setAuthStateMessage("");
 
@@ -635,22 +661,63 @@ function WorkspacePageContent() {
         <div className="container">
           <div className="diagnosis-grid">
             <section className="diagnosis-panel chat-panel">
-              <div className="diagnosis-panel-head">
-                <h2 className="diagnosis-panel-title">診断AI</h2>
-                <div className="chat-auth-inline">
-                  {userEmail && <span className="chat-auth-main">{userEmail}</span>}
-                  {userEmail && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-compact"
-                      onClick={handleLogout}
-                      disabled={loggingOut}
-                    >
-                      {loggingOut ? "ログアウト中..." : "ログアウト"}
-                    </button>
-                  )}
-                </div>
-              </div>
+                  <div className="diagnosis-panel-head">
+                    <h2 className="diagnosis-panel-title">診断AI</h2>
+                    <div className="chat-auth-inline">
+                      {userEmail && (
+                        <div
+                          className={`chat-account ${accountMenuOpen ? "open" : ""}`}
+                          ref={accountMenuRef}
+                        >
+                          <button
+                            type="button"
+                            className="chat-account-button"
+                            onClick={() => setAccountMenuOpen((prev) => !prev)}
+                            aria-expanded={accountMenuOpen}
+                            aria-haspopup="true"
+                          >
+                            <span className="chat-auth-main">{userEmail}</span>
+                            <i
+                              className={`fas fa-chevron-${accountMenuOpen ? "up" : "down"}`}
+                              aria-hidden="true"
+                            />
+                          </button>
+                          {accountMenuOpen && (
+                            <div className="chat-account-menu" role="menu">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  showMenuNotice("プランの変更ボタンはダミーです。まだ画面は移動しません。");
+                                  setAccountMenuOpen(false);
+                                }}
+                                role="menuitem"
+                              >
+                                プランの変更
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  showMenuNotice("サブスクの停止ボタンはダミーです。まだ処理は行いません。");
+                                  setAccountMenuOpen(false);
+                                }}
+                                role="menuitem"
+                              >
+                                サブスクの停止
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleLogout}
+                                disabled={loggingOut}
+                                role="menuitem"
+                              >
+                                {loggingOut ? "ログアウト中..." : "ログアウト"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
               {isQuotaEmpty && (
                 <div className="plan-callout">
