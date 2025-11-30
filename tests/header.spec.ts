@@ -3,11 +3,11 @@ import { test, expect } from "@playwright/test";
 test("ヘッダーのSNSアイコンが表示される", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("link", { name: "無料診断開始" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "無料診断開始" })).toHaveCount(0);
 
-  const instagram = page.locator(".header-social-links i.fa-instagram");
-  const tiktok = page.locator(".header-social-links i.fa-tiktok");
-  const line = page.locator(".header-social-links i.fa-line");
+  const instagram = page.locator(".header-social .social-links i.fa-instagram");
+  const tiktok = page.locator(".header-social .social-links i.fa-tiktok");
+  const line = page.locator(".header-social .social-links i.fa-line");
 
   await expect(instagram).toBeVisible();
   await expect(tiktok).toBeVisible();
