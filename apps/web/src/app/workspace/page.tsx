@@ -297,14 +297,9 @@ function WorkspacePageContent() {
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [planNotice, setPlanNotice] = useState<AuthNotice | null>(null);
   const [planManageOpen, setPlanManageOpen] = useState(false);
-  const [planManageTab, setPlanManageTab] = useState<"email" | "password" | "change" | "cancel">(
-    "email",
-  );
+  const [planManageTab, setPlanManageTab] = useState<"password" | "change" | "cancel">("password");
   const [cancelProcessing, setCancelProcessing] = useState(false);
   const [cancelStatus, setCancelStatus] = useState<AuthNotice | null>(null);
-  const [emailInput, setEmailInput] = useState("");
-  const [emailStatus, setEmailStatus] = useState<AuthNotice | null>(null);
-  const [emailProcessing, setEmailProcessing] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [passwordStatus, setPasswordStatus] = useState<AuthNotice | null>(null);
@@ -330,11 +325,7 @@ function WorkspacePageContent() {
     ? STATUS_LABEL_MAP[subscriptionStatus] || subscriptionStatus
     : null;
   const planManageDisabled =
-    subscriptionLoading ||
-    cancelProcessing ||
-    emailProcessing ||
-    passwordProcessing ||
-    !userEmail;
+    subscriptionLoading || cancelProcessing || passwordProcessing || !userEmail;
 
   const applyUsageCounts = useCallback(
     (payload: {
@@ -438,10 +429,6 @@ function WorkspacePageContent() {
 
   useEffect(() => {
     setAccountMenuOpen(false);
-  }, [userEmail]);
-
-  useEffect(() => {
-    setEmailInput(userEmail ?? "");
   }, [userEmail]);
 
   useEffect(() => {
@@ -649,12 +636,9 @@ function WorkspacePageContent() {
     inputArea.style.height = `${nextInputHeight}px`;
   }, [input]);
 
-  const handleOpenPlanManage = (
-    tab: "email" | "password" | "change" | "cancel" = "email",
-  ) => {
+  const handleOpenPlanManage = (tab: "password" | "change" | "cancel" = "password") => {
     setCancelStatus(null);
     setAccountMenuOpen(false);
-    setEmailStatus(null);
     setPasswordStatus(null);
     setPlanManageTab(tab);
     setPlanManageOpen(true);
@@ -663,73 +647,6 @@ function WorkspacePageContent() {
   const handleClosePlanManage = () => {
     setPlanManageOpen(false);
     setCancelStatus(null);
-  };
-
-  const handleEmailChange = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (emailProcessing) return;
-    setEmailStatus(null);
-
-    const value = emailInput.trim();
-    if (!value) {
-      setEmailStatus({
-        text: "メールアドレスを入力してください。",
-        tone: "error",
-      });
-      return;
-    }
-
-    if (!userEmail) {
-      setEmailStatus({
-        text: "ログイン状態を確認できません。再読み込みしてください。",
-        tone: "error",
-      });
-      return;
-    }
-
-    if (value === userEmail) {
-      setEmailStatus({
-        text: "現在のメールアドレスと同じです。別のメールを入力してください。",
-        tone: "info",
-      });
-      return;
-    }
-
-    setEmailProcessing(true);
-    setEmailStatus({
-      text: "変更手続きを開始しました。確認メールを送信しています。",
-      tone: "info",
-    });
-
-    try {
-      const emailRedirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
-      const { error } = await supabaseBrowserClient.auth.updateUser(
-        { email: value },
-        { emailRedirectTo },
-      );
-
-      if (error) {
-        throw error;
-      }
-
-      setEmailStatus({
-        text: "確認メールを送信しました。メールのリンクで変更を確定してください。",
-        tone: "success",
-      });
-      setUserEmail(value);
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "メールアドレスの変更に失敗しました。時間をおいて再度お試しください。";
-      setEmailStatus({
-        text: message,
-        tone: "error",
-      });
-    } finally {
-      setEmailProcessing(false);
-    }
   };
 
   const handlePasswordChange = async (event: FormEvent<HTMLFormElement>) => {
@@ -1172,7 +1089,7 @@ function WorkspacePageContent() {
                       <span className={`chat-plan-tag plan-${planClass}`}>{planLabel}</span>
                       {userEmail && (
                         <div
-                          className={`chat-account ${accountMenuOpen ? "open" : ""}`}
+                              className={`chat-account ${accountMenuOpen ? "open" : ""}`}
                           ref={accountMenuRef}
                         >
                           <button
@@ -1192,7 +1109,7 @@ function WorkspacePageContent() {
                             <div className="chat-account-menu" role="menu">
                               <button
                                 type="button"
-                                onClick={() => handleOpenPlanManage("email")}
+                                onClick={() => handleOpenPlanManage()}
                                 disabled={planManageDisabled}
                                 role="menuitem"
                               >
@@ -1360,7 +1277,7 @@ function WorkspacePageContent() {
                 <p className="plan-manage-eyebrow">設定</p>
                 <h3 className="plan-manage-title">アカウントとプランの設定</h3>
                 <p className="plan-manage-lead">
-                  メールやパスワードの更新、プランの切り替えや停止をここから操作できます。
+                  パスワードの更新やプランの切り替え、停止をここから操作できます。
                 </p>
               </div>
               <div className="plan-manage-header-actions">
@@ -1379,19 +1296,6 @@ function WorkspacePageContent() {
 
             <div className="plan-manage-body">
               <div className="plan-manage-nav" role="tablist" aria-label="設定メニュー">
-                <button
-                  type="button"
-                  className={`plan-manage-tab ${planManageTab === "email" ? "active" : ""}`}
-                  onClick={() => {
-                    setPlanManageTab("email");
-                    setCancelStatus(null);
-                    setEmailStatus(null);
-                  }}
-                  role="tab"
-                  aria-selected={planManageTab === "email"}
-                >
-                  メールアドレスの変更
-                </button>
                 <button
                   type="button"
                   className={`plan-manage-tab ${planManageTab === "password" ? "active" : ""}`}
@@ -1432,54 +1336,6 @@ function WorkspacePageContent() {
               </div>
 
               <div className="plan-manage-content">
-                {planManageTab === "email" && (
-                  <div className="plan-manage-panel" role="tabpanel" aria-label="メールアドレスの変更">
-                    <div className="plan-manage-card plan-change-card">
-                      <div className="plan-change-head">
-                        <div>
-                          <h3 className="plan-change-title">メールアドレスの変更</h3>
-                          <p className="plan-change-lead">
-                            新しいメールアドレスを入力すると確認メールを送信します。メール内のリンクを開いて変更を確定してください。
-                          </p>
-                        </div>
-                      </div>
-
-                      <form className="plan-change-actions" onSubmit={handleEmailChange}>
-                        <div className="plan-change-notes">
-                          <p>現在のメール: {userEmail ?? "未取得"}</p>
-                        </div>
-                        <div className="plan-change-buttons">
-                          <div className="form-group">
-                            <label htmlFor="new-email">新しいメールアドレス</label>
-                            <input
-                              id="new-email"
-                              type="email"
-                              value={emailInput}
-                              onChange={(event) => setEmailInput(event.target.value)}
-                              placeholder="sample@example.com"
-                              autoComplete="email"
-                              required
-                              disabled={emailProcessing}
-                            />
-                          </div>
-                          <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={emailProcessing || !emailInput.trim() || !userEmail}
-                          >
-                            {emailProcessing ? "送信中..." : "確認メールを送る"}
-                          </button>
-                        </div>
-                        {emailStatus && (
-                          <div className={`plan-change-status ${emailStatus.tone}`}>
-                            <p className="plan-change-status-text">{emailStatus.text}</p>
-                          </div>
-                        )}
-                      </form>
-                    </div>
-                  </div>
-                )}
-
                 {planManageTab === "password" && (
                   <div className="plan-manage-panel" role="tabpanel" aria-label="パスワードの変更">
                     <div className="plan-manage-card plan-change-card">
