@@ -331,11 +331,11 @@ export default function Home() {
                 します。
               </p>
               <div className="auth-buttons delay-200 animate-slide-up">
-                <Link href="/auth/login" className="btn btn-secondary auth-button">
-                  ログイン
+                <Link href="/auth/signup" className="btn btn-primary auth-button auth-button-primary">
+                  無料診断を今すぐ始める
                 </Link>
-                <Link href="/auth/signup" className="btn btn-secondary auth-button">
-                  新規登録
+                <Link href="/auth/login" className="btn btn-secondary auth-button auth-button-secondary">
+                  ログイン
                 </Link>
               </div>
             </div>
