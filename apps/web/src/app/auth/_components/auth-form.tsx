@@ -28,7 +28,7 @@ const copy = {
     switchText: "すでに登録済みの方は ",
     switchLinkLabel: "ログインへ",
     switchHref: "/auth/login",
-    statusPlaceholder: "送信すると登録が始まります。",
+    statusPlaceholder: "",
   },
 } satisfies Record<
   AuthMode,
@@ -100,9 +100,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           throw error;
         }
 
+        const registeredEmail = data.user?.email || email;
         const needEmail = !data.session;
         const next = needEmail
-          ? "/?auth=signup_pending"
+          ? registeredEmail
+            ? `/auth/signup/pending?email=${encodeURIComponent(registeredEmail)}`
+            : "/auth/signup/pending"
           : "/workspace?auth=signup_success";
         router.push(next);
         return;
@@ -185,11 +188,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           <p className="helper-text weak">数字と英字を混ぜるとより安全です。</p>
         </div>
 
-        <div className="auth-actions">
-          <div className="auth-hint">
-            <i className="fas fa-info-circle" aria-hidden="true" />
-            <span>入力内容はSupabaseで暗号化して管理します。</span>
-          </div>
+        <div className="auth-actions auth-actions-align-end">
           <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
             {loading ? "送信中..." : content.buttonLabel}
           </button>

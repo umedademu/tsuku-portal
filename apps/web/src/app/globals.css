@@ -3572,6 +3572,10 @@ img {
   flex-wrap: wrap;
 }
 
+.auth-actions.auth-actions-align-end {
+  justify-content: flex-end;
+}
+
 .auth-hint {
   display: inline-flex;
   align-items: center;
