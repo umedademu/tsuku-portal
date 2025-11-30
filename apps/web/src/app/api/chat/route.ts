@@ -1,4 +1,15 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+
+import { createSupabaseAdminClient } from "@/lib/supabase-admin";
+import {
+  ACTIVE_SUBSCRIPTION_STATUSES,
+  FREE_USAGE_LIMIT,
+  normalizePlan,
+  normalizeStatus,
+} from "@/lib/usage-constants";
 
 type GeminiInlineData = {
   data: string;
@@ -183,7 +194,7 @@ async function callGemini(systemPrompt: string, contents: GeminiContent[]) {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RequestBody;
-    const plan = body.plan?.toLowerCase() || "blue";
+    const planForPrompt = typeof body.plan === "string" ? body.plan.toLowerCase() : "blue";
 
     const userPartsFromBody = normalizeParts(body.messageParts);
     const userMessageText = (body.message || "").trim();
@@ -201,14 +212,99 @@ export async function POST(req: Request) {
       );
     }
 
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({
+      cookies: () => cookieStore as unknown as ReturnType<typeof cookies>,
+    });
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "ログインしてから再度お試しください。" },
+        { status: 401 },
+      );
+    }
+
+    const admin = createSupabaseAdminClient();
+    const [profileResult, usageResult] = await Promise.all([
+      admin.from("user_profiles").select("plan,status").eq("user_id", user.id).maybeSingle(),
+      admin
+        .from("usage_counts")
+        .select("total_answers,free_answers_used")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+    if (profileResult.error && profileResult.error.code !== "PGRST116") {
+      throw profileResult.error;
+    }
+    if (usageResult.error && usageResult.error.code !== "PGRST116") {
+      throw usageResult.error;
+    }
+
+    const planFromProfile = normalizePlan(profileResult.data?.plan);
+    const status = normalizeStatus(profileResult.data?.status);
+    const hasActivePlan = !!status && ACTIVE_SUBSCRIPTION_STATUSES.includes(status);
+
+    const totalAnswers = usageResult.data?.total_answers ?? 0;
+    const freeAnswersUsed = usageResult.data?.free_answers_used ?? 0;
+
+    if (!hasActivePlan && freeAnswersUsed >= FREE_USAGE_LIMIT) {
+      return NextResponse.json(
+        {
+          error: "無料枠は3回までです。プランを選んでから再開してください。",
+          limitExceeded: true,
+          remainingFree: 0,
+          freeAnswersUsed,
+          totalAnswers,
+          limit: FREE_USAGE_LIMIT,
+        },
+        { status: 403 },
+      );
+    }
+
     const history = normalizeHistory(body.history);
-    const systemPrompt = getPromptByPlan(plan);
+    const systemPrompt = getPromptByPlan(planForPrompt);
     const userContent: GeminiContent = { role: "user", parts: userParts };
     const contents: GeminiContent[] = [...history, userContent];
     const aiText = await callGemini(systemPrompt, contents);
 
+    const nowIso = new Date().toISOString();
+    const nextTotal = totalAnswers + 1;
+    const nextFree = hasActivePlan ? freeAnswersUsed : freeAnswersUsed + 1;
+
+    const usageUpdate = await admin
+      .from("usage_counts")
+      .upsert({
+        user_id: user.id,
+        total_answers: nextTotal,
+        free_answers_used: nextFree,
+        last_answer_at: nowIso,
+        updated_at: nowIso,
+      })
+      .select("total_answers,free_answers_used")
+      .single();
+
+    if (usageUpdate.error) {
+      throw usageUpdate.error;
+    }
+
+    const updatedFree = usageUpdate.data?.free_answers_used ?? nextFree;
+    const updatedTotal = usageUpdate.data?.total_answers ?? nextTotal;
+    const remainingFree = Math.max(FREE_USAGE_LIMIT - updatedFree, 0);
+
     return NextResponse.json({
       message: aiText,
+      totalAnswers: updatedTotal,
+      freeAnswersUsed: updatedFree,
+      remainingFree,
+      limit: FREE_USAGE_LIMIT,
+      hasActivePlan,
+      plan: planFromProfile,
+      status,
     });
   } catch (error: unknown) {
     console.error("Chat API error:", error);

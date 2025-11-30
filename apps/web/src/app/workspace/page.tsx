@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Suspense,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -13,6 +14,12 @@ import {
 } from "react";
 
 import { supabaseBrowserClient } from "@/lib/supabase-client";
+import {
+  ACTIVE_SUBSCRIPTION_STATUSES,
+  FREE_USAGE_LIMIT,
+  type PlanKey,
+  type SubscriptionStatus,
+} from "@/lib/usage-constants";
 
 type ChatMessage = {
   role: "user" | "ai";
@@ -50,12 +57,7 @@ type ChatBlock =
   | { type: "list"; ordered: boolean; items: string[] }
   | { type: "divider" };
 
-type PlanKey = "blue" | "green" | "gold";
-
-type SubscriptionStatus = "active" | "incomplete" | "past_due" | "canceled";
-
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
-const FREE_LIMIT = 3;
 const DEFAULT_PLAN: PlanKey = "green";
 const MIN_TEXTAREA_HEIGHT = 48;
 const MAX_TEXTAREA_LINES = 8;
@@ -268,7 +270,7 @@ const initialMessages: ChatMessage[] = [
   },
   {
     role: "ai",
-    text: "無料回数や決済まわりはまだダミーです。まずは気になる点を短く送ってみてください。",
+    text: "無料枠は1ユーザー3回までです。4回目以降はプラン選択に進んでください。",
   },
 ];
 
@@ -280,12 +282,14 @@ function WorkspacePageContent() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [remainingFree, setRemainingFree] = useState(FREE_LIMIT);
+  const [remainingFree, setRemainingFree] = useState(FREE_USAGE_LIMIT);
+  const [usageLimit, setUsageLimit] = useState(FREE_USAGE_LIMIT);
+  const [freeAnswersUsed, setFreeAnswersUsed] = useState(0);
+  const [usageLoading, setUsageLoading] = useState(false);
   const [chatNotice, setChatNotice] = useState("");
   const [authNotice, setAuthNotice] = useState<AuthNotice | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
-  const [authStateMessage, setAuthStateMessage] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [plan, setPlan] = useState<PlanKey | null>(null);
@@ -293,7 +297,6 @@ function WorkspacePageContent() {
   const [cancelAt, setCancelAt] = useState<string | null>(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const [subscriptionError, setSubscriptionError] = useState("");
   const [planNotice, setPlanNotice] = useState<AuthNotice | null>(null);
   const [planManageOpen, setPlanManageOpen] = useState(false);
   const [planManageTab, setPlanManageTab] = useState<"change" | "cancel">("change");
@@ -313,11 +316,61 @@ function WorkspacePageContent() {
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const planForChat = plan ?? DEFAULT_PLAN;
   const planClass = plan ?? "free";
-  const planLabel = plan ? PLAN_LABEL_MAP[plan] : "FREE";
+  const hasActivePlan =
+    !!subscriptionStatus && ACTIVE_SUBSCRIPTION_STATUSES.includes(subscriptionStatus);
+  const planLabel = plan ? PLAN_LABEL_MAP[plan] : hasActivePlan ? "契約中" : "FREE";
   const statusLabel = subscriptionStatus
     ? STATUS_LABEL_MAP[subscriptionStatus] || subscriptionStatus
     : null;
   const planManageDisabled = subscriptionLoading || cancelProcessing || !userEmail;
+
+  const applyUsageCounts = useCallback(
+    (payload: {
+      limit?: number;
+      remainingFree?: number;
+      freeAnswersUsed?: number;
+      plan?: PlanKey | null;
+      status?: SubscriptionStatus | null;
+    }) => {
+      const limitValue =
+        typeof payload.limit === "number" && Number.isFinite(payload.limit)
+          ? payload.limit
+          : usageLimit;
+      setUsageLimit(limitValue);
+
+      if (payload.plan === "blue" || payload.plan === "green" || payload.plan === "gold") {
+        setPlan(payload.plan);
+      }
+      if (
+        payload.status === "active" ||
+        payload.status === "incomplete" ||
+        payload.status === "past_due" ||
+        payload.status === "canceled"
+      ) {
+        setSubscriptionStatus(payload.status);
+      }
+
+      if (
+        typeof payload.freeAnswersUsed === "number" &&
+        Number.isFinite(payload.freeAnswersUsed)
+      ) {
+        setFreeAnswersUsed(payload.freeAnswersUsed);
+      }
+
+      if (
+        typeof payload.remainingFree === "number" &&
+        Number.isFinite(payload.remainingFree)
+      ) {
+        setRemainingFree(Math.max(payload.remainingFree, 0));
+      } else if (
+        typeof payload.freeAnswersUsed === "number" &&
+        Number.isFinite(payload.freeAnswersUsed)
+      ) {
+        setRemainingFree(Math.max(limitValue - payload.freeAnswersUsed, 0));
+      }
+    },
+    [usageLimit],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -330,11 +383,10 @@ function WorkspacePageContent() {
         }
         if (!cancelled) {
           setUserEmail(data.session?.user?.email ?? null);
-          setAuthStateMessage("");
         }
       } catch {
         if (!cancelled) {
-          setAuthStateMessage("ログイン状態の取得に失敗しました。再読み込みしてください。");
+          setChatNotice("ログイン状態の取得に失敗しました。再読み込みしてください。");
         }
       } finally {
         if (!cancelled) {
@@ -348,7 +400,6 @@ function WorkspacePageContent() {
     const { data: subscription } = supabaseBrowserClient.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
       setUserEmail(session?.user?.email ?? null);
-      setAuthStateMessage("");
       setAuthReady(true);
     });
 
@@ -396,7 +447,6 @@ function WorkspacePageContent() {
     const controller = new AbortController();
     const fetchProfile = async () => {
       setSubscriptionLoading(true);
-      setSubscriptionError("");
 
       try {
         const response = await fetch("/api/subscription/summary", {
@@ -418,7 +468,7 @@ function WorkspacePageContent() {
           const message =
             (data && typeof data.error === "string" && data.error) ||
             "サブスク情報の取得に失敗しました。時間をおいて再度お試しください。";
-          setSubscriptionError(message);
+          setChatNotice(message);
           return;
         }
 
@@ -432,7 +482,7 @@ function WorkspacePageContent() {
           error instanceof Error && error.message
             ? error.message
             : "サブスク情報の取得に失敗しました。時間をおいて再度お試しください。";
-        setSubscriptionError(message);
+        setChatNotice(message);
       } finally {
         if (!controller.signal.aborted) {
           setSubscriptionLoading(false);
@@ -443,6 +493,49 @@ function WorkspacePageContent() {
     void fetchProfile();
     return () => controller.abort();
   }, [authReady, userEmail]);
+
+  useEffect(() => {
+    if (!authReady || !userEmail) return;
+
+    const controller = new AbortController();
+    const fetchUsage = async () => {
+      setUsageLoading(true);
+
+      try {
+        const response = await fetch("/api/usage/summary", {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+
+        if (controller.signal.aborted) return;
+
+        if (!response.ok || !data || data.ok !== true) {
+          const message =
+            (data && typeof data.error === "string" && data.error) ||
+            "利用回数の取得に失敗しました。時間をおいて再度お試しください。";
+          setChatNotice(message);
+          return;
+        }
+
+        applyUsageCounts(data);
+        setChatNotice("");
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : "利用回数の取得に失敗しました。時間をおいて再度お試しください。";
+        setChatNotice(message);
+      } finally {
+        if (!controller.signal.aborted) {
+          setUsageLoading(false);
+        }
+      }
+    };
+
+    void fetchUsage();
+    return () => controller.abort();
+  }, [applyUsageCounts, authReady, userEmail]);
 
   useEffect(() => {
     if (!authParam) return;
@@ -617,7 +710,6 @@ function WorkspacePageContent() {
       setSubscriptionStatus(nextStatus ?? null);
       setCancelAt(data.cancelAt ?? null);
       setCurrentPeriodEnd(data.currentPeriodEnd ?? null);
-      setSubscriptionError("");
 
       const message =
         (data && typeof data.message === "string" && data.message) ||
@@ -651,7 +743,6 @@ function WorkspacePageContent() {
     if (loggingOut) return;
     setAccountMenuOpen(false);
     setLoggingOut(true);
-    setAuthStateMessage("");
 
     try {
       const { error } = await supabaseBrowserClient.auth.signOut();
@@ -676,8 +767,8 @@ function WorkspacePageContent() {
     const hasFile = Boolean(selectedFile);
 
     if ((!hasBody && !hasFile) || loading) return;
-    if (remainingFree <= 0) {
-      setChatNotice("無料枠が0回になっています。プラン選択ページに進む想定です。");
+    if (!hasActivePlan && remainingFree <= 0) {
+      setChatNotice("無料枠を使い切りました。プランを選んでください。");
       return;
     }
     if (selectedFile && !selectedFileData) {
@@ -689,7 +780,6 @@ function WorkspacePageContent() {
     const text = selectedFile
       ? `${mainText}\n\n【添付ファイル】${selectedFile.name}`
       : mainText;
-    const nextRemaining = Math.max(remainingFree - 1, 0);
     const firstUserIndex = messages.findIndex((message) => message.role === "user");
     const historySource =
       firstUserIndex === -1 ? [] : messages.slice(firstUserIndex);
@@ -714,7 +804,6 @@ function WorkspacePageContent() {
       { role: "ai", text: "Loading...", pending: true },
     ]);
     setInput("");
-    setRemainingFree(nextRemaining);
     setChatNotice("");
     setStatus("");
     setLoading(true);
@@ -732,27 +821,48 @@ function WorkspacePageContent() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "AIからの回答取得に失敗しました。");
+        if (data) {
+          applyUsageCounts(data);
+        }
+        if (data && data.limitExceeded) {
+          setChatNotice("無料枠を使い切りました。プランを選んでください。");
+        }
+        const message =
+          (data && typeof data.error === "string" && data.error) ||
+          "AIの回答取得に失敗しました。";
+        throw new Error(message);
       }
+      applyUsageCounts(data);
+      const limitValue =
+        typeof data?.limit === "number" && Number.isFinite(data.limit)
+          ? data.limit
+          : usageLimit;
+      const freeUsedFromResponse =
+        typeof data?.freeAnswersUsed === "number" && Number.isFinite(data.freeAnswersUsed)
+          ? data.freeAnswersUsed
+          : freeAnswersUsed;
+      const remainingFromResponse =
+        typeof data?.remainingFree === "number" && Number.isFinite(data.remainingFree)
+          ? Math.max(data.remainingFree, 0)
+          : Math.max(limitValue - freeUsedFromResponse, 0);
       setMessages((prev) => [
         ...prev.filter((message) => !message.pending),
         { role: "ai", text: data.message as string },
       ]);
       setStatus("");
+      if (!hasActivePlan && remainingFromResponse <= 0) {
+        setChatNotice("無料枠を使い切りました。プランを選んでください。");
+      }
     } catch (error) {
+      setMessages((prev) => prev.filter((message) => !message.pending));
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "AIの回答生成に失敗しました。";
-      setMessages((prev) => prev.filter((message) => !message.pending));
+          : "AIの回答取得に失敗しました。";
       setStatus(message);
     } finally {
       setLoading(false);
-      if (nextRemaining === 0) {
-        setChatNotice("無料枠を使い切りました。プラン選択に進む想定です。");
-      }
     }
-
   };
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -841,13 +951,10 @@ function WorkspacePageContent() {
     fileInputRef.current?.click();
   };
 
-  const isQuotaEmpty = remainingFree <= 0;
-  const compactAuthText = !authReady
-    ? "ログイン確認中です..."
-    : userEmail
-      ? `${userEmail} でログイン中`
-      : "未ログインのためトップに戻ります";
-
+  const isQuotaEmpty = !hasActivePlan && remainingFree <= 0;
+  const quotaLabel = hasActivePlan
+    ? "契約中は回数制限なし"
+    : `残り ${remainingFree} / ${usageLimit} 回`;
   return (
     <div className="diagnosis-page">
       {authNotice && (
@@ -960,13 +1067,13 @@ function WorkspacePageContent() {
               {isQuotaEmpty && (
                 <div className="plan-callout">
                   <div>
-                    <p className="plan-callout-title">無料分は0回になりました</p>
+                    <p className="plan-callout-title">無料枠が残っていません</p>
                     <p className="plan-callout-text">
-                      今は案内だけです。この状態でプラン選択ページ（/checkout/plan）へ進む動きに差し替える予定です。
+                      プランを選ぶと続けて診断できます。案内に沿って進めてください。
                     </p>
                   </div>
                   <Link href="/checkout/plan" className="btn btn-primary">
-                    プランを選ぶ（ダミー）
+                    プランを選ぶ
                   </Link>
                 </div>
               )}
@@ -1041,7 +1148,7 @@ function WorkspacePageContent() {
                       />
                       <div className="chat-actions">
                         <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
-                          残り {remainingFree} / {FREE_LIMIT} 回（ダミー）
+                          {quotaLabel}
                         </span>
                         <div className="chat-actions-right">
                           <button type="button" className="btn btn-secondary" onClick={resetMessages}>
@@ -1051,13 +1158,21 @@ function WorkspacePageContent() {
                             type="button"
                             className="btn btn-primary"
                             onClick={handleSend}
-                            disabled={(!input.trim() && !selectedFile) || isQuotaEmpty || loading}
+                            disabled={
+                              (!input.trim() && !selectedFile) || isQuotaEmpty || loading || usageLoading
+                            }
                           >
-                            {isQuotaEmpty ? "残り0回のため送信不可" : loading ? "送信中..." : "送信"}
+                            {usageLoading
+                              ? "残数を確認中..."
+                              : isQuotaEmpty
+                                ? "残り0回のため送信不可"
+                                : loading
+                                  ? "送信中..."
+                                  : "送信"}
                           </button>
                           {isQuotaEmpty && (
                             <Link href="/checkout/plan" className="btn btn-secondary">
-                              プランを確認（ダミー）
+                              プランを確認
                             </Link>
                           )}
                         </div>
