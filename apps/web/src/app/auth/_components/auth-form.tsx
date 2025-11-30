@@ -69,6 +69,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState<StatusTone>("muted");
   const [loading, setLoading] = useState(false);
@@ -85,6 +86,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
     try {
       if (mode === "signup") {
+        if (password !== confirmPassword) {
+          setStatus("パスワードが一致しません。もう一度入力してください。");
+          setStatusTone("error");
+          setLoading(false);
+          return;
+        }
         const callbackUrl =
           typeof window !== "undefined"
             ? `${window.location.origin}/auth/callback`
@@ -187,6 +194,29 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           />
           <p className="helper-text weak">数字と英字を混ぜるとより安全です。</p>
         </div>
+
+        {mode === "signup" ? (
+          <div className="form-group">
+            <label htmlFor={`${mode}-confirm-password`}>パスワード（確認）</label>
+            <input
+              id={`${mode}-confirm-password`}
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (statusTone === "error") {
+                  setStatus("");
+                  setStatusTone("muted");
+                }
+              }}
+              placeholder="同じパスワードをもう一度入力してください"
+              autoComplete="new-password"
+              minLength={6}
+              required
+              disabled={loading}
+            />
+          </div>
+        ) : null}
 
         <div className="auth-actions auth-actions-align-end">
           <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
