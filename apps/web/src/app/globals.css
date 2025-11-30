@@ -1953,11 +1953,11 @@ img {
 
 .plan-change-card {
   margin: 1rem 0 0;
-  padding: 1.25rem;
+  padding: 1rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -1979,7 +1979,7 @@ img {
 
 .plan-change-title {
   margin: 0.1rem 0;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   color: var(--color-text-main);
 }
 
@@ -1987,6 +1987,7 @@ img {
   margin: 0;
   color: var(--color-text-secondary);
   line-height: 1.5;
+  font-size: 0.95rem;
 }
 
 .plan-change-options {
@@ -1999,6 +2000,9 @@ img {
   align-items: flex-start;
   text-align: left;
   color: var(--color-text-main);
+  border-width: 1px;
+  box-shadow: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .plan-current-tag {
@@ -2029,6 +2033,39 @@ img {
   gap: 0.5rem;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.plan-change-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.plan-summary-line {
+  margin: 0;
+}
+
+.plan-change-options .plan-option:hover {
+  border-color: #cbd5e1;
+  transform: none;
+  box-shadow: none;
+}
+
+.plan-change-options .plan-option.selected {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  box-shadow: none;
+}
+
+.plan-change-options .plan-option .plan-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.plan-change-options .plan-option .plan-description {
+  font-size: 0.78rem;
 }
 
 .plan-change-status {

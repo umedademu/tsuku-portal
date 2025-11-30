@@ -73,27 +73,6 @@ const STATUS_LABEL_MAP: Record<SubscriptionStatus, string> = {
   canceled: "解約済み",
 };
 
-const PLAN_OPTIONS: { key: PlanKey; name: string; badge: string; description: string }[] = [
-  {
-    key: "blue",
-    name: "BLUEプラン",
-    badge: "構造とコスト重視",
-    description: "構造安全と費用を優先して確認したい方向け。",
-  },
-  {
-    key: "green",
-    name: "GREENプラン",
-    badge: "暮らしと外構を整える",
-    description: "住まいや外構を生活目線で整えたい方向け。",
-  },
-  {
-    key: "gold",
-    name: "GOLDプラン",
-    badge: "複数視点で精緻に確認",
-    description: "大規模案件や抜け漏れ防止を重視したい方向け。",
-  },
-];
-
 const normalizeAiText = (text: string) =>
   text
     .replace(/\r/g, "\n")
@@ -318,9 +297,6 @@ function WorkspacePageContent() {
   const [planNotice, setPlanNotice] = useState<AuthNotice | null>(null);
   const [planManageOpen, setPlanManageOpen] = useState(false);
   const [planManageTab, setPlanManageTab] = useState<"change" | "cancel">("change");
-  const [planChangeSelection, setPlanChangeSelection] = useState<PlanKey | null>(null);
-  const [planChangeStatus, setPlanChangeStatus] = useState<AuthNotice | null>(null);
-  const [planChanging, setPlanChanging] = useState(false);
   const [cancelProcessing, setCancelProcessing] = useState(false);
   const [cancelStatus, setCancelStatus] = useState<AuthNotice | null>(null);
   const router = useRouter();
@@ -341,15 +317,7 @@ function WorkspacePageContent() {
   const statusLabel = subscriptionStatus
     ? STATUS_LABEL_MAP[subscriptionStatus] || subscriptionStatus
     : null;
-  const planManageDisabled = subscriptionLoading || planChanging || cancelProcessing || !userEmail;
-  const planChangeSubmitDisabled =
-    planChanging ||
-    subscriptionLoading ||
-    !userEmail ||
-    subscriptionStatus === "canceled" ||
-    !plan ||
-    !planChangeSelection ||
-    planChangeSelection === plan;
+  const planManageDisabled = subscriptionLoading || cancelProcessing || !userEmail;
 
   useEffect(() => {
     let cancelled = false;
@@ -416,25 +384,11 @@ function WorkspacePageContent() {
   }, [planNotice]);
 
   useEffect(() => {
-    if (!planChangeStatus) return;
-    if (planChangeStatus.tone === "success") return;
-    const timer = setTimeout(() => setPlanChangeStatus(null), 8000);
-    return () => clearTimeout(timer);
-  }, [planChangeStatus]);
-
-  useEffect(() => {
     if (!cancelStatus) return;
     if (cancelStatus.tone === "success") return;
     const timer = setTimeout(() => setCancelStatus(null), 8000);
     return () => clearTimeout(timer);
   }, [cancelStatus]);
-
-  useEffect(() => {
-    setPlanChangeSelection(plan ?? null);
-    if (!plan) {
-      setPlanChangeStatus(null);
-    }
-  }, [plan]);
 
   useEffect(() => {
     if (!authReady || !userEmail) return;
@@ -587,7 +541,6 @@ function WorkspacePageContent() {
   }, [input]);
 
   const handleOpenPlanManage = (tab: "change" | "cancel" = "change") => {
-    setPlanChangeStatus(null);
     setCancelStatus(null);
     setAccountMenuOpen(false);
     setPlanManageTab(tab);
@@ -596,110 +549,7 @@ function WorkspacePageContent() {
 
   const handleClosePlanManage = () => {
     setPlanManageOpen(false);
-    setPlanChangeStatus(null);
     setCancelStatus(null);
-  };
-
-  const handlePlanChange = async () => {
-    if (!plan) {
-      setPlanChangeStatus({
-        text: "現在のプラン情報がありません。決済後にお試しください。",
-        tone: "error",
-      });
-      return;
-    }
-
-    if (!planChangeSelection) {
-      setPlanChangeStatus({
-        text: "変更先のプランを選んでください。",
-        tone: "error",
-      });
-      return;
-    }
-
-    if (planChangeSelection === plan) {
-      setPlanChangeStatus({
-        text: "すでにこのプランを利用中です。",
-        tone: "info",
-      });
-      return;
-    }
-
-    if (subscriptionStatus === "canceled") {
-      setPlanChangeStatus({
-        text: "解約済みのため変更できません。プラン選択から再開してください。",
-        tone: "error",
-      });
-      return;
-    }
-
-    setPlanChangeStatus({
-      text: "プラン変更を送信しています。日割り精算で反映します。",
-      tone: "info",
-    });
-    setPlanChanging(true);
-
-    try {
-      const response = await fetch("/api/subscription/change", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planChangeSelection }),
-      });
-      const data = await response.json();
-
-      if (!response.ok || !data || data.ok !== true) {
-        const message =
-          (data && typeof data.error === "string" && data.error) ||
-          "プラン変更に失敗しました。時間をおいて再度お試しください。";
-        setPlanChangeStatus({
-          text: message,
-          tone: "error",
-        });
-        return;
-      }
-
-      const nextPlan =
-        data.plan === "blue" || data.plan === "green" || data.plan === "gold"
-          ? (data.plan as PlanKey)
-          : planChangeSelection;
-      const nextStatus =
-        data.status === "active" ||
-        data.status === "incomplete" ||
-        data.status === "past_due" ||
-        data.status === "canceled"
-          ? (data.status as SubscriptionStatus)
-          : subscriptionStatus;
-
-      setPlan(nextPlan ?? null);
-      setPlanChangeSelection(nextPlan ?? planChangeSelection);
-      setSubscriptionStatus(nextStatus ?? null);
-      setCancelAt(data.cancelAt ?? null);
-      setCurrentPeriodEnd(data.currentPeriodEnd ?? null);
-      setSubscriptionError("");
-
-      const noticeText =
-        (data && typeof data.message === "string" && data.message) ||
-        "プランを変更しました。日割りで精算し、更新日は据え置きです。";
-
-      const notice: AuthNotice = {
-        text: noticeText,
-        tone: "success",
-      };
-
-      setPlanChangeStatus(notice);
-      setPlanNotice(notice);
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "プラン変更に失敗しました。時間をおいて再度お試しください。";
-      setPlanChangeStatus({
-        text: message,
-        tone: "error",
-      });
-    } finally {
-      setPlanChanging(false);
-    }
   };
 
   const handleCancelSubscription = async () => {
@@ -1090,11 +940,7 @@ function WorkspacePageContent() {
                                 disabled={planManageDisabled}
                                 role="menuitem"
                               >
-                                {planChanging
-                                  ? "変更を処理中..."
-                                  : cancelProcessing
-                                    ? "停止を処理中..."
-                                    : "プランの管理"}
+                                {cancelProcessing ? "停止を処理中..." : "プランの管理"}
                               </button>
                               <button
                                 type="button"
@@ -1278,7 +1124,6 @@ function WorkspacePageContent() {
                   className={`plan-manage-tab ${planManageTab === "cancel" ? "active" : ""}`}
                   onClick={() => {
                     setPlanManageTab("cancel");
-                    setPlanChangeStatus(null);
                   }}
                   role="tab"
                   aria-selected={planManageTab === "cancel"}
@@ -1293,74 +1138,35 @@ function WorkspacePageContent() {
                     <div className="plan-change-card plan-manage-card">
                       <div className="plan-change-head">
                         <div>
-                          <p className="plan-change-eyebrow">プラン変更</p>
-                          <h3 className="plan-change-title">切り替え先を選んで即時反映</h3>
+                          <h3 className="plan-change-title">プランの変更</h3>
                           <p className="plan-change-lead">
-                            日割りで精算し、現在の更新日はそのままです。下位プランは次回請求で差額を相殺します。
+                            現在の契約状況を確認し、必要ならプラン選択ページで切り替えてください。
                           </p>
-                          {!plan && (
-                            <p className="plan-change-warning">
-                              契約中のプランが見つかりません。決済完了後に選択できます。
-                            </p>
-                          )}
                         </div>
                       </div>
 
-                      <div className="plan-change-options">
-                        {PLAN_OPTIONS.map((option) => {
-                          const selected = planChangeSelection === option.key;
-                          return (
-                            <button
-                              type="button"
-                              key={option.key}
-                              className={`plan-option ${selected ? "selected" : ""}`}
-                              onClick={() => {
-                                setPlanChangeSelection(option.key);
-                                setPlanChangeStatus(null);
-                              }}
-                              aria-pressed={selected}
-                            >
-                              <div className="plan-option-header">
-                                <span className="plan-chip">{option.badge}</span>
-                                <span className="plan-name">{option.name}</span>
-                              </div>
-                              <p className="plan-description">{option.description}</p>
-                              {plan === option.key && <span className="plan-current-tag">現在のプラン</span>}
-                            </button>
-                          );
-                        })}
+                      <div className="plan-change-summary">
+                        <p className="plan-summary-line">
+                          プラン: {plan ? PLAN_LABEL_MAP[plan] : "未契約"}　状態: {statusLabel ?? "未取得"}
+                        </p>
+                        <p className="plan-summary-line">
+                          次回更新日: {currentPeriodEnd ? formatDateTime(currentPeriodEnd) : "未設定"}
+                        </p>
+                        <p className="plan-summary-line">
+                          停止予定: {cancelAt ? formatDateTime(cancelAt) : "未設定"}
+                        </p>
                       </div>
 
                       <div className="plan-change-actions">
                         <div className="plan-change-notes">
-                          <p>アップグレードは即時請求、ダウングレードは次回請求で差額を相殺します。</p>
-                          <p>現在の更新日は据え置きで、日割り精算だけ実施します。</p>
+                          <p>プランの切り替えは「プランを選択する」から進んでください。</p>
                         </div>
                         <div className="plan-change-buttons">
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={handlePlanChange}
-                            disabled={planChangeSubmitDisabled}
-                          >
-                            {planChanging ? "変更を処理中..." : "このプランに変更する"}
-                          </button>
                           <Link href="/checkout/plan" className="btn btn-secondary">
-                            プラン選択ページを開く
+                            プランを選択する
                           </Link>
                         </div>
                       </div>
-
-                      {planChangeStatus && (
-                        <div className={`plan-change-status ${planChangeStatus.tone}`}>
-                          <p className="plan-change-status-text">{planChangeStatus.text}</p>
-                          {planChangeStatus.tone === "success" && (
-                            <Link href="/plan/change/success" className="plan-change-inline-link">
-                              完了ページを開く
-                            </Link>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -1393,7 +1199,7 @@ function WorkspacePageContent() {
                         <ul className="plan-cancel-list">
                           <li>停止後は次回更新日に自動で課金が止まります。</li>
                           <li>更新日までは診断を通常通り利用できます。</li>
-                          <li>やっぱり続ける場合はプラン変更タブで再度選択してください。</li>
+                          <li>再開する場合はプラン選択手続きを別途行ってください。</li>
                         </ul>
                         <div className="plan-cancel-actions">
                           <button
@@ -1417,7 +1223,7 @@ function WorkspacePageContent() {
                               setCancelStatus(null);
                             }}
                           >
-                            プランの変更に戻る
+                            契約情報を確認する
                           </button>
                         </div>
                         {cancelStatus && (
