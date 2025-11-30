@@ -316,11 +316,13 @@ function WorkspacePageContent() {
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [subscriptionError, setSubscriptionError] = useState("");
   const [planNotice, setPlanNotice] = useState<AuthNotice | null>(null);
-  const [planChangeOpen, setPlanChangeOpen] = useState(false);
+  const [planManageOpen, setPlanManageOpen] = useState(false);
+  const [planManageTab, setPlanManageTab] = useState<"change" | "cancel">("change");
   const [planChangeSelection, setPlanChangeSelection] = useState<PlanKey | null>(null);
   const [planChangeStatus, setPlanChangeStatus] = useState<AuthNotice | null>(null);
   const [planChanging, setPlanChanging] = useState(false);
   const [cancelProcessing, setCancelProcessing] = useState(false);
+  const [cancelStatus, setCancelStatus] = useState<AuthNotice | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const authParam = searchParams.get("auth");
@@ -339,9 +341,15 @@ function WorkspacePageContent() {
   const statusLabel = subscriptionStatus
     ? STATUS_LABEL_MAP[subscriptionStatus] || subscriptionStatus
     : null;
-  const planChangeDisabled = subscriptionLoading || planChanging || !userEmail;
+  const planManageDisabled = subscriptionLoading || planChanging || cancelProcessing || !userEmail;
   const planChangeSubmitDisabled =
-    planChangeDisabled || !planChangeSelection || planChangeSelection === plan;
+    planChanging ||
+    subscriptionLoading ||
+    !userEmail ||
+    subscriptionStatus === "canceled" ||
+    !plan ||
+    !planChangeSelection ||
+    planChangeSelection === plan;
 
   useEffect(() => {
     let cancelled = false;
@@ -415,9 +423,15 @@ function WorkspacePageContent() {
   }, [planChangeStatus]);
 
   useEffect(() => {
+    if (!cancelStatus) return;
+    if (cancelStatus.tone === "success") return;
+    const timer = setTimeout(() => setCancelStatus(null), 8000);
+    return () => clearTimeout(timer);
+  }, [cancelStatus]);
+
+  useEffect(() => {
     setPlanChangeSelection(plan ?? null);
     if (!plan) {
-      setPlanChangeOpen(false);
       setPlanChangeStatus(null);
     }
   }, [plan]);
@@ -572,25 +586,18 @@ function WorkspacePageContent() {
     inputArea.style.height = `${nextInputHeight}px`;
   }, [input]);
 
-  const handleOpenPlanChange = () => {
+  const handleOpenPlanManage = (tab: "change" | "cancel" = "change") => {
     setPlanChangeStatus(null);
+    setCancelStatus(null);
     setAccountMenuOpen(false);
-
-    if (!plan) {
-      setPlanNotice({
-        text: "契約済みのプランが見つかりません。決済完了後に変更できます。",
-        tone: "error",
-      });
-      router.push("/checkout/plan");
-      return;
-    }
-
-    setPlanChangeOpen(true);
+    setPlanManageTab(tab);
+    setPlanManageOpen(true);
   };
 
-  const handleClosePlanChange = () => {
-    setPlanChangeOpen(false);
+  const handleClosePlanManage = () => {
+    setPlanManageOpen(false);
     setPlanChangeStatus(null);
+    setCancelStatus(null);
   };
 
   const handlePlanChange = async () => {
@@ -698,6 +705,23 @@ function WorkspacePageContent() {
   const handleCancelSubscription = async () => {
     if (cancelProcessing) return;
     setAccountMenuOpen(false);
+    setCancelStatus(null);
+
+    if (!plan || !subscriptionStatus) {
+      setCancelStatus({
+        text: "現在の契約が見つかりません。決済状況を確認してください。",
+        tone: "error",
+      });
+      return;
+    }
+
+    if (subscriptionStatus === "canceled") {
+      setCancelStatus({
+        text: "すでに停止済みです。必要に応じてプラン選択から再開してください。",
+        tone: "info",
+      });
+      return;
+    }
 
     const confirmed = window.confirm(
       "次回更新日までは利用でき、その後自動停止します。サブスクを停止しますか？",
@@ -705,10 +729,12 @@ function WorkspacePageContent() {
     if (!confirmed) return;
 
     setCancelProcessing(true);
-    setPlanNotice({
+    const progressNotice: AuthNotice = {
       text: "解約を受け付けています。少しお待ちください。",
       tone: "info",
-    });
+    };
+    setPlanNotice(progressNotice);
+    setCancelStatus(progressNotice);
 
     try {
       const response = await fetch("/api/subscription/cancel", { method: "POST" });
@@ -749,19 +775,23 @@ function WorkspacePageContent() {
           ? `解約を受け付けました。${formatDateTime(data.cancelAt)} までは利用できます。`
           : "解約を受け付けました。現在の支払期間終了までは利用できます。");
 
-      setPlanNotice({
+      const notice: AuthNotice = {
         text: message,
         tone: "success",
-      });
+      };
+      setPlanNotice(notice);
+      setCancelStatus(notice);
     } catch (error) {
       const message =
         error instanceof Error && error.message
           ? error.message
           : "解約処理でエラーが発生しました。時間をおいて再度お試しください。";
-      setPlanNotice({
+      const notice: AuthNotice = {
         text: message,
         tone: "error",
-      });
+      };
+      setPlanNotice(notice);
+      setCancelStatus(notice);
     } finally {
       setCancelProcessing(false);
     }
@@ -1034,23 +1064,6 @@ function WorkspacePageContent() {
                     <h2 className="diagnosis-panel-title">診断AI</h2>
                     <div className="chat-auth-inline">
                       <span className={`chat-plan-tag plan-${planClass}`}>{planLabel}</span>
-                      {subscriptionLoading && (
-                        <span className="chat-plan-status">サブスク情報を取得しています...</span>
-                      )}
-                      {statusLabel && (
-                        <span className="chat-plan-status">
-                          サブスク状態: {statusLabel}
-                          {cancelAt ? `（${formatDateTime(cancelAt)} に停止予定）` : ""}
-                        </span>
-                      )}
-                      {currentPeriodEnd && !subscriptionLoading && (
-                        <span className="chat-plan-status">
-                          次回更新日: {formatDateTime(currentPeriodEnd)}
-                        </span>
-                      )}
-                      {subscriptionError && !subscriptionLoading && (
-                        <span className="chat-plan-status error">{subscriptionError}</span>
-                      )}
                       {userEmail && (
                         <div
                           className={`chat-account ${accountMenuOpen ? "open" : ""}`}
@@ -1073,19 +1086,15 @@ function WorkspacePageContent() {
                             <div className="chat-account-menu" role="menu">
                               <button
                                 type="button"
-                                onClick={handleOpenPlanChange}
-                                disabled={planChangeDisabled}
+                                onClick={() => handleOpenPlanManage("change")}
+                                disabled={planManageDisabled}
                                 role="menuitem"
                               >
-                                {plan ? "プランの変更" : "プランを選ぶ"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleCancelSubscription}
-                                disabled={cancelProcessing || subscriptionLoading}
-                                role="menuitem"
-                              >
-                                {cancelProcessing ? "処理中..." : "サブスクの停止"}
+                                {planChanging
+                                  ? "変更を処理中..."
+                                  : cancelProcessing
+                                    ? "停止を処理中..."
+                                    : "プランの管理"}
                               </button>
                               <button
                                 type="button"
@@ -1101,89 +1110,6 @@ function WorkspacePageContent() {
                       )}
                     </div>
                   </div>
-
-              {planChangeOpen && (
-                <div className="plan-change-card">
-                  <div className="plan-change-head">
-                    <div>
-                      <p className="plan-change-eyebrow">プラン変更</p>
-                      <h3 className="plan-change-title">切り替え先を選んで即時反映</h3>
-                      <p className="plan-change-lead">
-                        日割りで精算し、現在の更新日はそのままです。下位プランは次回請求で差額を相殺します。
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={handleClosePlanChange}
-                    >
-                      閉じる
-                    </button>
-                  </div>
-
-                  <div className="plan-change-options">
-                    {PLAN_OPTIONS.map((option) => {
-                      const selected = planChangeSelection === option.key;
-                      return (
-                        <button
-                          type="button"
-                          key={option.key}
-                          className={`plan-option ${selected ? "selected" : ""}`}
-                          onClick={() => {
-                            setPlanChangeSelection(option.key);
-                            setPlanChangeStatus(null);
-                          }}
-                          aria-pressed={selected}
-                        >
-                          <div className="plan-option-header">
-                            <span className="plan-chip">{option.badge}</span>
-                            <span className="plan-name">{option.name}</span>
-                          </div>
-                          <p className="plan-description">{option.description}</p>
-                          {plan === option.key && (
-                            <span className="plan-current-tag">現在のプラン</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="plan-change-actions">
-                    <div className="plan-change-notes">
-                      <p>アップグレードは即時請求。ダウングレードは次回請求で差額を相殺します。</p>
-                      <p>現在の更新日は据え置きで、日割り精算だけ実施します。</p>
-                    </div>
-                    <div className="plan-change-buttons">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={handlePlanChange}
-                        disabled={planChangeSubmitDisabled}
-                      >
-                        {planChanging ? "変更を処理中..." : "このプランに変更する"}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={handleClosePlanChange}
-                      >
-                        閉じる
-                      </button>
-                    </div>
-                  </div>
-
-                  {planChangeStatus && (
-                    <div className={`plan-change-status ${planChangeStatus.tone}`}>
-                      <p className="plan-change-status-text">{planChangeStatus.text}</p>
-                      {planChangeStatus.tone === "success" && (
-                        <Link href="/plan/change/success" className="plan-change-inline-link">
-                          完了ページを開く
-                        </Link>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
 
               {isQuotaEmpty && (
                 <div className="plan-callout">
@@ -1298,6 +1224,216 @@ function WorkspacePageContent() {
           </div>
         </div>
       </main>
+
+      {planManageOpen && (
+        <div
+          className="plan-manage-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              handleClosePlanManage();
+            }
+          }}
+        >
+          <div className="plan-manage-dialog">
+            <div className="plan-manage-header">
+              <div>
+                <p className="plan-manage-eyebrow">プランの管理</p>
+                <h3 className="plan-manage-title">変更と停止をまとめて操作</h3>
+                <p className="plan-manage-lead">
+                  現在の契約状況に合わせてプランを切り替えるか、次回更新で停止するかを選べます。
+                </p>
+              </div>
+              <div className="plan-manage-header-actions">
+                <span className={`chat-plan-tag plan-${planClass}`}>{planLabel}</span>
+                {statusLabel && <span className="plan-manage-state">状態: {statusLabel}</span>}
+                <button
+                  type="button"
+                  className="plan-manage-close"
+                  onClick={handleClosePlanManage}
+                  aria-label="プラン管理を閉じる"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="plan-manage-body">
+              <div className="plan-manage-nav" role="tablist" aria-label="プラン管理メニュー">
+                <button
+                  type="button"
+                  className={`plan-manage-tab ${planManageTab === "change" ? "active" : ""}`}
+                  onClick={() => {
+                    setPlanManageTab("change");
+                    setCancelStatus(null);
+                  }}
+                  role="tab"
+                  aria-selected={planManageTab === "change"}
+                >
+                  プランの変更
+                </button>
+                <button
+                  type="button"
+                  className={`plan-manage-tab ${planManageTab === "cancel" ? "active" : ""}`}
+                  onClick={() => {
+                    setPlanManageTab("cancel");
+                    setPlanChangeStatus(null);
+                  }}
+                  role="tab"
+                  aria-selected={planManageTab === "cancel"}
+                >
+                  サブスクの停止
+                </button>
+              </div>
+
+              <div className="plan-manage-content">
+                {planManageTab === "change" ? (
+                  <div className="plan-manage-panel" role="tabpanel" aria-label="プランの変更">
+                    <div className="plan-change-card plan-manage-card">
+                      <div className="plan-change-head">
+                        <div>
+                          <p className="plan-change-eyebrow">プラン変更</p>
+                          <h3 className="plan-change-title">切り替え先を選んで即時反映</h3>
+                          <p className="plan-change-lead">
+                            日割りで精算し、現在の更新日はそのままです。下位プランは次回請求で差額を相殺します。
+                          </p>
+                          {!plan && (
+                            <p className="plan-change-warning">
+                              契約中のプランが見つかりません。決済完了後に選択できます。
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="plan-change-options">
+                        {PLAN_OPTIONS.map((option) => {
+                          const selected = planChangeSelection === option.key;
+                          return (
+                            <button
+                              type="button"
+                              key={option.key}
+                              className={`plan-option ${selected ? "selected" : ""}`}
+                              onClick={() => {
+                                setPlanChangeSelection(option.key);
+                                setPlanChangeStatus(null);
+                              }}
+                              aria-pressed={selected}
+                            >
+                              <div className="plan-option-header">
+                                <span className="plan-chip">{option.badge}</span>
+                                <span className="plan-name">{option.name}</span>
+                              </div>
+                              <p className="plan-description">{option.description}</p>
+                              {plan === option.key && <span className="plan-current-tag">現在のプラン</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="plan-change-actions">
+                        <div className="plan-change-notes">
+                          <p>アップグレードは即時請求、ダウングレードは次回請求で差額を相殺します。</p>
+                          <p>現在の更新日は据え置きで、日割り精算だけ実施します。</p>
+                        </div>
+                        <div className="plan-change-buttons">
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handlePlanChange}
+                            disabled={planChangeSubmitDisabled}
+                          >
+                            {planChanging ? "変更を処理中..." : "このプランに変更する"}
+                          </button>
+                          <Link href="/checkout/plan" className="btn btn-secondary">
+                            プラン選択ページを開く
+                          </Link>
+                        </div>
+                      </div>
+
+                      {planChangeStatus && (
+                        <div className={`plan-change-status ${planChangeStatus.tone}`}>
+                          <p className="plan-change-status-text">{planChangeStatus.text}</p>
+                          {planChangeStatus.tone === "success" && (
+                            <Link href="/plan/change/success" className="plan-change-inline-link">
+                              完了ページを開く
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="plan-manage-panel" role="tabpanel" aria-label="サブスクの停止">
+                    <div className="plan-cancel-card">
+                      <div className="plan-cancel-head">
+                        <p className="plan-cancel-eyebrow">サブスクの停止</p>
+                        <h3 className="plan-cancel-title">更新日前に自動停止を予約</h3>
+                        <p className="plan-cancel-lead">
+                          停止しても次回更新日までは利用できます。再開する際は改めてプランを選択してください。
+                        </p>
+                      </div>
+                      <div className="plan-cancel-meta">
+                        <span className="plan-cancel-pill">
+                          プラン: {plan ? PLAN_LABEL_MAP[plan] : "未契約"}
+                        </span>
+                        {statusLabel && <span className="plan-cancel-pill muted">状態: {statusLabel}</span>}
+                        {cancelAt && (
+                          <span className="plan-cancel-pill warning">
+                            停止予定: {formatDateTime(cancelAt)}
+                          </span>
+                        )}
+                        {currentPeriodEnd && (
+                          <span className="plan-cancel-pill muted">
+                            更新日: {formatDateTime(currentPeriodEnd)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="plan-cancel-body">
+                        <ul className="plan-cancel-list">
+                          <li>停止後は次回更新日に自動で課金が止まります。</li>
+                          <li>更新日までは診断を通常通り利用できます。</li>
+                          <li>やっぱり続ける場合はプラン変更タブで再度選択してください。</li>
+                        </ul>
+                        <div className="plan-cancel-actions">
+                          <button
+                            type="button"
+                            className="btn plan-cancel-button"
+                            onClick={handleCancelSubscription}
+                            disabled={
+                              cancelProcessing ||
+                              subscriptionLoading ||
+                              !plan ||
+                              subscriptionStatus === "canceled"
+                            }
+                          >
+                            {cancelProcessing ? "停止を処理中..." : "サブスクを停止する"}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => {
+                              setPlanManageTab("change");
+                              setCancelStatus(null);
+                            }}
+                          >
+                            プランの変更に戻る
+                          </button>
+                        </div>
+                        {cancelStatus && (
+                          <div className={`plan-change-status ${cancelStatus.tone}`}>
+                            <p className="plan-change-status-text">{cancelStatus.text}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

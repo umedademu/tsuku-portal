@@ -1692,6 +1692,265 @@ img {
   line-height: 1.4;
 }
 
+.plan-manage-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.plan-manage-dialog {
+  width: min(1100px, 96%);
+  max-height: 90vh;
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.plan-manage-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95) 0%, #ffffff 100%);
+}
+
+.plan-manage-eyebrow {
+  margin: 0;
+  color: var(--color-text-muted);
+  letter-spacing: 0.08em;
+  font-size: 0.86rem;
+}
+
+.plan-manage-title {
+  margin: 0.1rem 0;
+  color: var(--color-text-main);
+  font-size: 1.25rem;
+}
+
+.plan-manage-lead {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.plan-manage-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.plan-manage-state {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.plan-manage-close {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-full);
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.plan-manage-close:hover {
+  background: #e2e8f0;
+}
+
+.plan-manage-body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 520px;
+  height: 100%;
+}
+
+.plan-manage-nav {
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-manage-tab {
+  padding: 1rem 1.2rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  border-left: 4px solid transparent;
+}
+
+.plan-manage-tab.active {
+  background: white;
+  color: var(--color-primary);
+  border-left-color: var(--color-primary);
+}
+
+.plan-manage-content {
+  padding: 1.25rem;
+  overflow-y: auto;
+  background: white;
+}
+
+.plan-manage-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.plan-manage-card.plan-change-card {
+  margin: 0;
+}
+
+.plan-change-warning {
+  margin: 0.4rem 0 0;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.plan-cancel-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.plan-cancel-head p {
+  margin: 0;
+}
+
+.plan-cancel-eyebrow {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+}
+
+.plan-cancel-title {
+  color: var(--color-text-main);
+  font-size: 1.2rem;
+  margin: 0.1rem 0;
+}
+
+.plan-cancel-lead {
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.plan-cancel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.plan-cancel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.plan-cancel-pill.muted {
+  background: #f8fafc;
+  color: var(--color-text-muted);
+}
+
+.plan-cancel-pill.warning {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.plan-cancel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.plan-cancel-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.plan-cancel-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.plan-cancel-button {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecdd3;
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-cancel-button:hover {
+  background: #ffe4e6;
+  box-shadow: var(--shadow-md);
+}
+
+.plan-cancel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .plan-manage-body {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-manage-nav {
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .plan-manage-tab {
+    flex: 1;
+    text-align: center;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+  }
+
+  .plan-manage-tab.active {
+    border-bottom-color: var(--color-primary);
+    background: #eef2ff;
+  }
+}
+
 .plan-change-card {
   margin: 1rem 0 0;
   padding: 1.25rem;
