@@ -10,6 +10,7 @@ import {
   useState,
   type ChangeEvent,
   type DragEvent,
+  type KeyboardEvent,
   type ReactNode,
 } from "react";
 
@@ -267,10 +268,6 @@ const initialMessages: ChatMessage[] = [
   {
     role: "ai",
     text: "図面や見積のファイルを添付して送ると、AIがその場で診断内容を返します。",
-  },
-  {
-    role: "ai",
-    text: "無料枠は1ユーザー3回までです。4回目以降はプラン選択に進んでください。",
   },
 ];
 
@@ -1141,6 +1138,12 @@ function WorkspacePageContent() {
                         ref={textareaRef}
                         value={input}
                         onChange={(event) => setInput(event.target.value)}
+                        onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
+                          if (event.ctrlKey && event.key === "Enter") {
+                            event.preventDefault();
+                            void handleSend();
+                          }
+                        }}
                         rows={1}
                         placeholder="ここに相談したい内容を入力（診断AIが返答します）"
                       />
