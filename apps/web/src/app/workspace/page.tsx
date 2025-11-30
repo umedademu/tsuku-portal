@@ -952,9 +952,7 @@ function WorkspacePageContent() {
   };
 
   const isQuotaEmpty = !hasActivePlan && remainingFree <= 0;
-  const quotaLabel = hasActivePlan
-    ? "契約中は回数制限なし"
-    : `残り ${remainingFree} / ${usageLimit} 回`;
+  const quotaLabel = hasActivePlan ? "" : `残り ${remainingFree} / ${usageLimit} 回`;
   return (
     <div className="diagnosis-page">
       {authNotice && (
@@ -1144,12 +1142,14 @@ function WorkspacePageContent() {
                         value={input}
                         onChange={(event) => setInput(event.target.value)}
                         rows={1}
-                        placeholder="ここに送信したい内容を入力（Geminiが返答します）"
+                        placeholder="ここに相談したい内容を入力（診断AIが返答します）"
                       />
                       <div className="chat-actions">
-                        <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
-                          {quotaLabel}
-                        </span>
+                        {!hasActivePlan && (
+                          <span className={`quota-pill ${isQuotaEmpty ? "empty" : ""}`}>
+                            {quotaLabel}
+                          </span>
+                        )}
                         <div className="chat-actions-right">
                           <button type="button" className="btn btn-secondary" onClick={resetMessages}>
                             履歴をリセット
