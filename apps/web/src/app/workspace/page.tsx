@@ -240,6 +240,7 @@ const initialMessages: ChatMessage[] = [
 ];
 
 function WorkspacePageContent() {
+  const planLabel = CURRENT_PLAN === "free" ? "FREE" : CURRENT_PLAN.toUpperCase();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -664,6 +665,7 @@ function WorkspacePageContent() {
                   <div className="diagnosis-panel-head">
                     <h2 className="diagnosis-panel-title">診断AI</h2>
                     <div className="chat-auth-inline">
+                      <span className={`chat-plan-tag plan-${CURRENT_PLAN}`}>{planLabel}</span>
                       {userEmail && (
                         <div
                           className={`chat-account ${accountMenuOpen ? "open" : ""}`}
