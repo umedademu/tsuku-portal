@@ -2527,6 +2527,19 @@ img {
   color: #1d4ed8;
 }
 
+.chat-plan-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  font-size: 0.92rem;
+}
+
+.chat-plan-status.error {
+  color: #b91c1c;
+}
+
 .chat-account {
   display: inline-flex;
   align-items: center;

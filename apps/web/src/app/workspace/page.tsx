@@ -50,11 +50,28 @@ type ChatBlock =
   | { type: "list"; ordered: boolean; items: string[] }
   | { type: "divider" };
 
+type PlanKey = "blue" | "green" | "gold";
+
+type SubscriptionStatus = "active" | "incomplete" | "past_due" | "canceled";
+
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const FREE_LIMIT = 3;
-const CURRENT_PLAN = "green";
+const DEFAULT_PLAN: PlanKey = "green";
 const MIN_TEXTAREA_HEIGHT = 48;
 const MAX_TEXTAREA_LINES = 8;
+
+const PLAN_LABEL_MAP: Record<PlanKey, string> = {
+  blue: "BLUE",
+  green: "GREEN",
+  gold: "GOLD",
+};
+
+const STATUS_LABEL_MAP: Record<SubscriptionStatus, string> = {
+  active: "有効",
+  incomplete: "支払い確認中",
+  past_due: "支払い遅延",
+  canceled: "解約済み",
+};
 
 const normalizeAiText = (text: string) =>
   text
@@ -184,6 +201,22 @@ const renderAiText = (text: string) => {
   );
 };
 
+const formatDateTime = (value: string | null) => {
+  if (!value) return "";
+  try {
+    return new Date(value).toLocaleString("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return value;
+  }
+};
+
 const readFileAsBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -240,7 +273,6 @@ const initialMessages: ChatMessage[] = [
 ];
 
 function WorkspacePageContent() {
-  const planLabel = CURRENT_PLAN === "free" ? "FREE" : CURRENT_PLAN.toUpperCase();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -256,6 +288,14 @@ function WorkspacePageContent() {
   const [authStateMessage, setAuthStateMessage] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [plan, setPlan] = useState<PlanKey | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [cancelAt, setCancelAt] = useState<string | null>(null);
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState("");
+  const [planNotice, setPlanNotice] = useState<AuthNotice | null>(null);
+  const [cancelProcessing, setCancelProcessing] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const authParam = searchParams.get("auth");
@@ -268,6 +308,12 @@ function WorkspacePageContent() {
   const baseInputMarginTopRef = useRef<number | null>(null);
   const baseInputHeightRef = useRef<number | null>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const planForChat = plan ?? DEFAULT_PLAN;
+  const planClass = plan ?? "free";
+  const planLabel = plan ? PLAN_LABEL_MAP[plan] : "FREE";
+  const statusLabel = subscriptionStatus
+    ? STATUS_LABEL_MAP[subscriptionStatus] || subscriptionStatus
+    : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -326,6 +372,66 @@ function WorkspacePageContent() {
   useEffect(() => {
     setAccountMenuOpen(false);
   }, [userEmail]);
+
+  useEffect(() => {
+    if (!planNotice) return;
+    const timer = setTimeout(() => setPlanNotice(null), 8000);
+    return () => clearTimeout(timer);
+  }, [planNotice]);
+
+  useEffect(() => {
+    if (!authReady || !userEmail) return;
+
+    const controller = new AbortController();
+    const fetchProfile = async () => {
+      setSubscriptionLoading(true);
+      setSubscriptionError("");
+
+      try {
+        const response = await fetch("/api/subscription/summary", {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+
+        if (controller.signal.aborted) return;
+
+        if (response.status === 404) {
+          setPlan(null);
+          setSubscriptionStatus(null);
+          setCancelAt(null);
+          setCurrentPeriodEnd(null);
+          return;
+        }
+
+        if (!response.ok || !data || data.ok !== true) {
+          const message =
+            (data && typeof data.error === "string" && data.error) ||
+            "サブスク情報の取得に失敗しました。時間をおいて再度お試しください。";
+          setSubscriptionError(message);
+          return;
+        }
+
+        setPlan(data.plan ?? null);
+        setSubscriptionStatus(data.status ?? null);
+        setCancelAt(data.cancelAt ?? null);
+        setCurrentPeriodEnd(data.currentPeriodEnd ?? null);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : "サブスク情報の取得に失敗しました。時間をおいて再度お試しください。";
+        setSubscriptionError(message);
+      } finally {
+        if (!controller.signal.aborted) {
+          setSubscriptionLoading(false);
+        }
+      }
+    };
+
+    void fetchProfile();
+    return () => controller.abort();
+  }, [authReady, userEmail]);
 
   useEffect(() => {
     if (!authParam) return;
@@ -423,8 +529,76 @@ function WorkspacePageContent() {
     inputArea.style.height = `${nextInputHeight}px`;
   }, [input]);
 
-  const showMenuNotice = (text: string) => {
-    setChatNotice(text);
+  const handleCancelSubscription = async () => {
+    if (cancelProcessing) return;
+    setAccountMenuOpen(false);
+
+    const confirmed = window.confirm(
+      "次回更新日までは利用でき、その後自動停止します。サブスクを停止しますか？",
+    );
+    if (!confirmed) return;
+
+    setCancelProcessing(true);
+    setPlanNotice({
+      text: "解約を受け付けています。少しお待ちください。",
+      tone: "info",
+    });
+
+    try {
+      const response = await fetch("/api/subscription/cancel", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok || !data || data.ok !== true) {
+        const message =
+          (data && typeof data.error === "string" && data.error) ||
+          "解約に失敗しました。時間をおいて再度お試しください。";
+        setPlanNotice({
+          text: message,
+          tone: "error",
+        });
+        return;
+      }
+
+      const nextPlan =
+        data.plan === "blue" || data.plan === "green" || data.plan === "gold"
+          ? (data.plan as PlanKey)
+          : plan;
+      const nextStatus =
+        data.status === "active" ||
+        data.status === "incomplete" ||
+        data.status === "past_due" ||
+        data.status === "canceled"
+          ? (data.status as SubscriptionStatus)
+          : subscriptionStatus;
+
+      setPlan(nextPlan ?? null);
+      setSubscriptionStatus(nextStatus ?? null);
+      setCancelAt(data.cancelAt ?? null);
+      setCurrentPeriodEnd(data.currentPeriodEnd ?? null);
+      setSubscriptionError("");
+
+      const message =
+        (data && typeof data.message === "string" && data.message) ||
+        (data.cancelAt
+          ? `解約を受け付けました。${formatDateTime(data.cancelAt)} までは利用できます。`
+          : "解約を受け付けました。現在の支払期間終了までは利用できます。");
+
+      setPlanNotice({
+        text: message,
+        tone: "success",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "解約処理でエラーが発生しました。時間をおいて再度お試しください。";
+      setPlanNotice({
+        text: message,
+        tone: "error",
+      });
+    } finally {
+      setCancelProcessing(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -504,7 +678,7 @@ function WorkspacePageContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          plan: CURRENT_PLAN,
+          plan: planForChat,
           message: text,
           messageParts: userParts,
           history: historyPayload,
@@ -658,6 +832,34 @@ function WorkspacePageContent() {
         </div>
       )}
 
+      {planNotice && (
+        <div className="container">
+          <div className={`auth-notice ${planNotice.tone}`}>
+            <div className="auth-notice-text">
+              <i
+                className={
+                  planNotice.tone === "success"
+                    ? "fas fa-check-circle"
+                    : planNotice.tone === "error"
+                      ? "fas fa-exclamation-circle"
+                      : "fas fa-info-circle"
+                }
+                aria-hidden="true"
+              />
+              <span>{planNotice.text}</span>
+            </div>
+            <button
+              type="button"
+              className="auth-notice-close"
+              onClick={() => setPlanNotice(null)}
+              aria-label="通知を閉じる"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       <main className="diagnosis-main">
         <div className="container">
           <div className="diagnosis-grid">
@@ -665,7 +867,24 @@ function WorkspacePageContent() {
                   <div className="diagnosis-panel-head">
                     <h2 className="diagnosis-panel-title">診断AI</h2>
                     <div className="chat-auth-inline">
-                      <span className={`chat-plan-tag plan-${CURRENT_PLAN}`}>{planLabel}</span>
+                      <span className={`chat-plan-tag plan-${planClass}`}>{planLabel}</span>
+                      {subscriptionLoading && (
+                        <span className="chat-plan-status">サブスク情報を取得しています...</span>
+                      )}
+                      {statusLabel && (
+                        <span className="chat-plan-status">
+                          サブスク状態: {statusLabel}
+                          {cancelAt ? `（${formatDateTime(cancelAt)} に停止予定）` : ""}
+                        </span>
+                      )}
+                      {currentPeriodEnd && !subscriptionLoading && (
+                        <span className="chat-plan-status">
+                          次回更新日: {formatDateTime(currentPeriodEnd)}
+                        </span>
+                      )}
+                      {subscriptionError && !subscriptionLoading && (
+                        <span className="chat-plan-status error">{subscriptionError}</span>
+                      )}
                       {userEmail && (
                         <div
                           className={`chat-account ${accountMenuOpen ? "open" : ""}`}
@@ -689,7 +908,7 @@ function WorkspacePageContent() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  showMenuNotice("プランの変更ボタンはダミーです。まだ画面は移動しません。");
+                                  router.push("/checkout/plan");
                                   setAccountMenuOpen(false);
                                 }}
                                 role="menuitem"
@@ -698,13 +917,11 @@ function WorkspacePageContent() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  showMenuNotice("サブスクの停止ボタンはダミーです。まだ処理は行いません。");
-                                  setAccountMenuOpen(false);
-                                }}
+                                onClick={handleCancelSubscription}
+                                disabled={cancelProcessing || subscriptionLoading}
                                 role="menuitem"
                               >
-                                サブスクの停止
+                                {cancelProcessing ? "処理中..." : "サブスクの停止"}
                               </button>
                               <button
                                 type="button"
