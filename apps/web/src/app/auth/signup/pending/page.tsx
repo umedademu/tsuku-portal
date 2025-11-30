@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: "登録したメールアドレス宛に認証リンクを送信しました。",
 };
 
+export const dynamic = "force-dynamic";
+
 type SignupPendingPageProps = {
   searchParams?: {
     email?: string | string[];
@@ -20,6 +22,7 @@ export default function SignupPendingPage({ searchParams }: SignupPendingPagePro
       : Array.isArray(rawEmail)
         ? rawEmail[0]
         : "";
+  const decodedEmail = email ? decodeURIComponent(email) : "";
 
   return (
     <div className="auth-card">
@@ -35,8 +38,8 @@ export default function SignupPendingPage({ searchParams }: SignupPendingPagePro
         <div className="auth-state-texts">
           <p className="auth-state-label">送信先</p>
           <p className="auth-state-main">
-            {email
-              ? `登録したメールアドレス「${email}」宛に認証リンクを届けました。`
+            {decodedEmail
+              ? `登録したメールアドレス「${decodedEmail}」宛に認証リンクを届けました。`
               : "入力いただいたメールアドレス宛に認証リンクを届けました。"}
           </p>
           <p className="auth-state-note">

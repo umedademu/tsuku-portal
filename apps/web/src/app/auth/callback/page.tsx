@@ -34,14 +34,35 @@ function AuthCallbackContent() {
       }
     }
 
-    if (!code && !hashAccessToken) {
-      setTone("error");
-      setMessage("認証コードが見つかりませんでした。メールのリンクをもう一度開いてください。");
-      return;
-    }
-
     const run = async () => {
       try {
+        // SupabaseがURLを処理した後にセッションだけ残るケースを先に拾う
+        const { data: existingSession, error: sessionError } =
+          await supabaseBrowserClient.auth.getSession();
+        if (sessionError) {
+          if (!cancelled) {
+            setTone("error");
+            setMessage("認証状態の確認に失敗しました。もう一度お試しください。");
+          }
+          return;
+        }
+        if (existingSession.session) {
+          if (!cancelled) {
+            setTone("success");
+            setMessage("ログインが完了しました。診断ページへ移動します。");
+            router.replace("/workspace?auth=signup_verified");
+          }
+          return;
+        }
+
+        if (!code && !hashAccessToken) {
+          if (!cancelled) {
+            setTone("error");
+            setMessage("認証コードが見つかりませんでした。メールのリンクをもう一度開いてください。");
+          }
+          return;
+        }
+
         // ハッシュにaccess/refresh tokenがある場合は直接セッション化
         if (hashAccessToken && hashRefreshToken) {
           const { error: setSessionError } = await supabaseBrowserClient.auth.setSession({
