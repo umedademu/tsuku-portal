@@ -1145,16 +1145,16 @@ function WorkspacePageContent() {
                         </div>
                       </div>
 
-                      <div className="plan-change-summary">
-                        <p className="plan-summary-line">
+                      <div className="plan-change-meta">
+                        <span className="plan-cancel-pill">
                           プラン: {plan ? PLAN_LABEL_MAP[plan] : "未契約"}　状態: {statusLabel ?? "未取得"}
-                        </p>
-                        <p className="plan-summary-line">
+                        </span>
+                        <span className="plan-cancel-pill muted">
                           次回更新日: {currentPeriodEnd ? formatDateTime(currentPeriodEnd) : "未設定"}
-                        </p>
-                        <p className="plan-summary-line">
+                        </span>
+                        <span className="plan-cancel-pill warning">
                           停止予定: {cancelAt ? formatDateTime(cancelAt) : "未設定"}
-                        </p>
+                        </span>
                       </div>
 
                       <div className="plan-change-actions">

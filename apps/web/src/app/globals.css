@@ -2035,16 +2035,14 @@ img {
   align-items: center;
 }
 
-.plan-change-summary {
+.plan-change-meta {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  color: var(--color-text-secondary);
-  font-weight: 700;
 }
 
-.plan-summary-line {
-  margin: 0;
+.plan-change-meta .plan-cancel-pill {
+  width: fit-content;
 }
 
 .plan-change-options .plan-option:hover {
