@@ -1213,17 +1213,7 @@ function WorkspacePageContent() {
                               subscriptionStatus === "canceled"
                             }
                           >
-                            {cancelProcessing ? "停止を処理中..." : "サブスクを停止する"}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => {
-                              setPlanManageTab("change");
-                              setCancelStatus(null);
-                            }}
-                          >
-                            契約情報を確認する
+                            {cancelProcessing ? "停止を処理中..." : "サブスクリプションをキャンセルする"}
                           </button>
                         </div>
                         {cancelStatus && (
