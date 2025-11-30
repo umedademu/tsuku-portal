@@ -33,7 +33,6 @@ const socialLinks = [
     icon: "fab fa-line",
   },
 ];
-const stats = { remainingToday: 5, monthlyUsers: 128 };
 const features = [
   {
     icon: "🔍",
@@ -339,11 +338,6 @@ export default function Home() {
                   新規登録
                 </Link>
               </div>
-              <div className="urgency-bar delay-300 animate-slide-up">
-                本日の無料診断受付枠 残り
-                <span className="highlight">{stats.remainingToday}</span>
-                件
-              </div>
             </div>
           </div>
         </section>
@@ -355,9 +349,6 @@ export default function Home() {
             <h2 className="section-title text-center">セカンドオピニオンの重要性</h2>
             <p className="section-subtitle text-center">
               建設業界で見落とされがちな問題を、最新AI技術で解決します。
-              <br />
-              今月、<span className="highlight text-amber-600 font-bold">{stats.monthlyUsers}</span>
-              名がこの診断を利用しました。
             </p>
             <div className="features-grid">
               {features.map((feature, idx) => (
