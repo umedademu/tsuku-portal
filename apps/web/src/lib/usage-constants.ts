@@ -1,4 +1,4 @@
-export const FREE_USAGE_LIMIT = 3;
+export const FREE_USAGE_LIMIT = 10;
 
 export type PlanKey = "blue" | "green" | "gold";
 

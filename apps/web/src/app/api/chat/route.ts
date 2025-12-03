@@ -255,7 +255,7 @@ export async function POST(req: Request) {
     if (!hasActivePlan && freeAnswersUsed >= FREE_USAGE_LIMIT) {
       return NextResponse.json(
         {
-          error: "無料枠は3回までです。プランを選んでから再開してください。",
+          error: `無料枠は${FREE_USAGE_LIMIT}回までです。プランを選んでから再開してください。`,
           limitExceeded: true,
           remainingFree: 0,
           freeAnswersUsed,
