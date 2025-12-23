@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Fragment,
+  useCallback,
   useEffect,
+  useRef,
   useState,
   Suspense,
 } from "react";
@@ -68,6 +70,81 @@ const caseStudies = [
     label: "横浜市 施設敷地内点字シート設置工事",
     imageSrc: "/images/sekou-jirei/jirei-10.jpg",
     thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-10.jpg",
+  },
+  {
+    label: "神奈川県藤沢市鵠沼海岸 浸透槽設置工事",
+    imageSrc: "/images/sekou-jirei/jirei-01.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-01.jpg",
+  },
+  {
+    label: "横浜市 石積み擁壁補強工事",
+    imageSrc: "/images/sekou-jirei/jirei-03.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-03.jpg",
+  },
+  {
+    label: "神奈川県横浜市鶴見区駒岡 私道舗装工事",
+    imageSrc: "/images/sekou-jirei/jirei-05.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-05.jpg",
+  },
+  {
+    label: "東京都 山留め工事",
+    imageSrc: "/images/sekou-jirei/jirei-07.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-07.jpg",
+  },
+  {
+    label: "神奈川県相模原市南区相模大野 鉄筋工事",
+    imageSrc: "/images/sekou-jirei/jirei-12.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-12.jpg",
+  },
+  {
+    label: "神奈川県座間市 左官工事",
+    imageSrc: "/images/sekou-jirei/jirei-14.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-14.jpg",
+  },
+  {
+    label: "厚木市 屋上舗装表面補修工事",
+    imageSrc: "/images/sekou-jirei/jirei-17.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-17.jpg",
+  },
+  {
+    label: "東京都日野市 敷地内車止め設置工事",
+    imageSrc: "/images/sekou-jirei/jirei-18.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-18.jpg",
+  },
+  {
+    label: "東京都荒川区 敷地内段差解消スロープ設置工事",
+    imageSrc: "/images/sekou-jirei/jirei-20.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-20.jpg",
+  },
+  {
+    label: "神奈川県相模原市緑区 法面保護工事",
+    imageSrc: "/images/sekou-jirei/jirei-21.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-21.jpg",
+  },
+  {
+    label: "神奈川県相模原市緑区 土止め擁壁工事",
+    imageSrc: "/images/sekou-jirei/jirei-23.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-23.jpg",
+  },
+  {
+    label: "神奈川県横浜市都筑区 歩車道ブロック据え付け工事",
+    imageSrc: "/images/sekou-jirei/jirei-28.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-28.jpg",
+  },
+  {
+    label: "川崎市麻生区百合ヶ丘 造成工事",
+    imageSrc: "/images/sekou-jirei/jirei-32.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-32.jpg",
+  },
+  {
+    label: "神奈川県相模原市緑区 敷地内芝張り工事",
+    imageSrc: "/images/sekou-jirei/jirei-36.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-36.jpg",
+  },
+  {
+    label: "神奈川県大和市中央林間 造成工事一式",
+    imageSrc: "/images/sekou-jirei/jirei-41.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-41.jpg",
   },
 ];
 const sitemapLinks = [
@@ -199,13 +276,52 @@ export default function Home() {
     tone: "success" | "info" | "error";
   } | null>(null);
   const [workLightboxIndex, setWorkLightboxIndex] = useState<number | null>(null);
+  const worksScrollerRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollWorksPrev, setCanScrollWorksPrev] = useState(false);
+  const [canScrollWorksNext, setCanScrollWorksNext] = useState(false);
   const totalWorks = caseStudies.length;
+
+  const updateWorksScrollState = useCallback(() => {
+    const scroller = worksScrollerRef.current;
+    if (!scroller) return;
+
+    const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
+    const currentScrollLeft = scroller.scrollLeft;
+    setCanScrollWorksPrev(currentScrollLeft > 0);
+    setCanScrollWorksNext(currentScrollLeft < maxScrollLeft - 1);
+  }, []);
+
+  const scrollWorksByPage = useCallback((direction: "prev" | "next") => {
+    const scroller = worksScrollerRef.current;
+    if (!scroller) return;
+
+    const firstItem = scroller.querySelector<HTMLElement>(".work-item");
+    const gapValue = Number.parseFloat(
+      window.getComputedStyle(scroller).columnGap || window.getComputedStyle(scroller).gap || "0",
+    );
+    const amount = firstItem
+      ? firstItem.getBoundingClientRect().width + (Number.isFinite(gapValue) ? gapValue : 0)
+      : scroller.clientWidth;
+    scroller.scrollBy({
+      left: direction === "next" ? amount : -amount,
+      behavior: "smooth",
+    });
+  }, []);
 
   useEffect(() => {
     if (!authNotice) return;
     const timer = setTimeout(() => setAuthNotice(null), 8000);
     return () => clearTimeout(timer);
   }, [authNotice]);
+
+  useEffect(() => {
+    const raf = window.requestAnimationFrame(updateWorksScrollState);
+    window.addEventListener("resize", updateWorksScrollState);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updateWorksScrollState);
+    };
+  }, [updateWorksScrollState]);
 
   useEffect(() => {
     if (workLightboxIndex === null) return;
@@ -466,26 +582,52 @@ export default function Home() {
             <h2 className="section-title text-center">施工事例</h2>
             <div className="works-grid">
               <div className="work-card animate-slide-up">
-                <div className="work-items-grid">
-                  {caseStudies.map((study, idx) => (
-                    <button
-                      type="button"
-                      className="work-item"
-                      key={study.imageSrc}
-                      onClick={() => setWorkLightboxIndex(idx)}
-                      aria-label={`${study.label}を拡大して表示`}
-                    >
-                      <div className="work-thumbnail">
-                        <Image
-                          src={study.thumbSrc}
-                          alt={study.label}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 420px"
-                        />
-                      </div>
-                      <p className="work-label">{study.label}</p>
-                    </button>
-                  ))}
+                <div className="work-carousel">
+                  <button
+                    type="button"
+                    className="work-carousel-nav"
+                    onClick={() => scrollWorksByPage("prev")}
+                    aria-label="左へ"
+                    disabled={!canScrollWorksPrev}
+                  >
+                    {"<"}
+                  </button>
+
+                  <div
+                    className="work-items-grid"
+                    ref={worksScrollerRef}
+                    onScroll={updateWorksScrollState}
+                  >
+                    {caseStudies.map((study, idx) => (
+                      <button
+                        type="button"
+                        className="work-item"
+                        key={study.imageSrc}
+                        onClick={() => setWorkLightboxIndex(idx)}
+                        aria-label={`${study.label}を拡大して表示`}
+                      >
+                        <div className="work-thumbnail">
+                          <Image
+                            src={study.thumbSrc}
+                            alt={study.label}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 420px"
+                          />
+                        </div>
+                        <p className="work-label">{study.label}</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="work-carousel-nav"
+                    onClick={() => scrollWorksByPage("next")}
+                    aria-label="右へ"
+                    disabled={!canScrollWorksNext}
+                  >
+                    {">"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -525,7 +667,7 @@ export default function Home() {
                   }
                   aria-label="前の写真へ"
                 >
-                  ‹
+                  {"<"}
                 </button>
 
                 <button
@@ -539,7 +681,7 @@ export default function Home() {
                   }
                   aria-label="次の写真へ"
                 >
-                  ›
+                  {">"}
                 </button>
 
                 <div className="work-lightbox-image">
