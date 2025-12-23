@@ -833,6 +833,51 @@ img {
   height: 100%;
 }
 
+.work-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.75rem;
+}
+
+.work-item {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.work-item:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.55);
+  outline-offset: 4px;
+}
+
+.work-thumbnail {
+  width: 100%;
+  height: 220px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 1.5rem;
+  background: #f1f5f9;
+}
+
+.work-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.work-item:hover .work-thumbnail img {
+  transform: scale(1.05);
+}
+
 .work-card:hover {
   transform: translateY(-8px);
   border-color: rgba(37, 99, 235, 0.2);
@@ -860,10 +905,19 @@ img {
 }
 
 .work-card h3 {
-  font-size: 1.35rem;
-  margin-bottom: 1rem;
-  color: var(--color-text-main);
-  line-height: 1.4;
+  font-size: clamp(0.65rem, 0.9vw, 0.75rem);
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.work-label {
+  margin: 0.75rem 0 0;
+  color: var(--color-text-muted);
+  font-size: clamp(0.65rem, 0.9vw, 0.75rem);
+  font-weight: 400;
+  line-height: 1.55;
 }
 
 .work-card p {
@@ -879,6 +933,119 @@ img {
   color: var(--color-accent);
   font-size: 1.25rem;
   text-align: right;
+}
+
+.work-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.work-lightbox-panel {
+  position: relative;
+  width: min(1100px, 100%);
+  background: #0f172a;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.work-lightbox-image {
+  position: relative;
+  width: 100%;
+  height: min(70vh, 680px);
+  background: rgba(2, 6, 23, 0.35);
+}
+
+.work-lightbox-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.work-lightbox-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 16px;
+  background: rgba(2, 6, 23, 0.6);
+}
+
+.work-lightbox-caption {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.work-lightbox-counter {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.work-lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 42px;
+  height: 42px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(2, 6, 23, 0.65);
+  color: #f8fafc;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.work-lightbox-close:hover {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.work-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(2, 6, 23, 0.65);
+  color: #f8fafc;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.work-lightbox-nav:hover {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.work-lightbox-prev {
+  left: 12px;
+}
+
+.work-lightbox-next {
+  right: 12px;
+}
+
+.work-lightbox-close:focus-visible,
+.work-lightbox-nav:focus-visible {
+  outline: 3px solid rgba(148, 163, 184, 0.7);
+  outline-offset: 3px;
 }
 
 /* Keyword Cloud */

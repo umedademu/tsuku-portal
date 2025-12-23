@@ -55,28 +55,19 @@ const features = [
 ];
 const caseStudies = [
   {
-    region: "神奈川県横浜市",
-    date: "2024年9月",
-    title: "RC建築のコスト最適化とリスク低減",
-    summary:
-      "複数社の見積もりをAIが比較し、最適な代替案を提示。合意形成までの工数を短縮しコストを18%削減。",
-    result: "コスト-18%",
+    label: "神奈川県横浜市戸塚区 階段左官工事",
+    imageSrc: "/images/sekou-jirei/jirei-27.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-27.jpg",
   },
   {
-    region: "東京都世田谷区",
-    date: "2024年7月",
-    title: "改修工事の安全リスク検証",
-    summary:
-      "現地写真と図面を突合し、潜在的な躯体リスクを洗い出し。段取りと補強案を提示し追加費用を23%抑制。",
-    result: "追加費用-23%",
+    label: "神奈川県大和市中央林間 カーポート設置、舗装工事",
+    imageSrc: "/images/sekou-jirei/jirei-08.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-08.jpg",
   },
   {
-    region: "神奈川県相模原市",
-    date: "2024年6月",
-    title: "住宅リフォームの工程短縮",
-    summary:
-      "工程の依存関係と素材手配をAIが整理。調整ロスを削減し遅延ゼロで引き渡し。",
-    result: "遅延ゼロ",
+    label: "横浜市 施設敷地内点字シート設置工事",
+    imageSrc: "/images/sekou-jirei/jirei-10.jpg",
+    thumbSrc: "/images/sekou-jirei/thumb/thumb-jirei-10.jpg",
   },
 ];
 const sitemapLinks = [
@@ -207,12 +198,56 @@ export default function Home() {
     text: string;
     tone: "success" | "info" | "error";
   } | null>(null);
+  const [workLightboxIndex, setWorkLightboxIndex] = useState<number | null>(null);
+  const totalWorks = caseStudies.length;
 
   useEffect(() => {
     if (!authNotice) return;
     const timer = setTimeout(() => setAuthNotice(null), 8000);
     return () => clearTimeout(timer);
   }, [authNotice]);
+
+  useEffect(() => {
+    if (workLightboxIndex === null) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [workLightboxIndex]);
+
+  useEffect(() => {
+    if (workLightboxIndex === null) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setWorkLightboxIndex(null);
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setWorkLightboxIndex((current) => {
+          if (current === null) return current;
+          return (current - 1 + totalWorks) % totalWorks;
+        });
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setWorkLightboxIndex((current) => {
+          if (current === null) return current;
+          return (current + 1) % totalWorks;
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [totalWorks, workLightboxIndex]);
 
   return (
     <div className="page-wrapper">
@@ -430,18 +465,104 @@ export default function Home() {
           <div className="container">
             <h2 className="section-title text-center">施工事例</h2>
             <div className="works-grid">
-              {caseStudies.map((study, idx) => (
-                <article className={`work-card animate-slide-up delay-${(idx + 1) * 100}`} key={study.title}>
-                  <p className="work-meta">
-                    {study.date} | {study.region}
-                  </p>
-                  <h3>{study.title}</h3>
-                  <p>{study.summary}</p>
-                  <span>{study.result}</span>
-                </article>
-              ))}
+              <div className="work-card animate-slide-up">
+                <div className="work-items-grid">
+                  {caseStudies.map((study, idx) => (
+                    <button
+                      type="button"
+                      className="work-item"
+                      key={study.imageSrc}
+                      onClick={() => setWorkLightboxIndex(idx)}
+                      aria-label={`${study.label}を拡大して表示`}
+                    >
+                      <div className="work-thumbnail">
+                        <Image
+                          src={study.thumbSrc}
+                          alt={study.label}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 420px"
+                        />
+                      </div>
+                      <p className="work-label">{study.label}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
+
+          {workLightboxIndex !== null && (
+            <div
+              className="work-lightbox"
+              role="dialog"
+              aria-modal="true"
+              aria-label="施工事例の拡大表示"
+              onClick={() => setWorkLightboxIndex(null)}
+            >
+              <div
+                className="work-lightbox-panel"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="work-lightbox-close"
+                  onClick={() => setWorkLightboxIndex(null)}
+                  aria-label="閉じる"
+                >
+                  ×
+                </button>
+
+                <button
+                  type="button"
+                  className="work-lightbox-nav work-lightbox-prev"
+                  onClick={() =>
+                    setWorkLightboxIndex(
+                      (current) =>
+                        current === null
+                          ? current
+                          : (current - 1 + totalWorks) % totalWorks,
+                    )
+                  }
+                  aria-label="前の写真へ"
+                >
+                  ‹
+                </button>
+
+                <button
+                  type="button"
+                  className="work-lightbox-nav work-lightbox-next"
+                  onClick={() =>
+                    setWorkLightboxIndex(
+                      (current) =>
+                        current === null ? current : (current + 1) % totalWorks,
+                    )
+                  }
+                  aria-label="次の写真へ"
+                >
+                  ›
+                </button>
+
+                <div className="work-lightbox-image">
+                  <Image
+                    src={caseStudies[workLightboxIndex].imageSrc}
+                    alt={caseStudies[workLightboxIndex].label}
+                    fill
+                    sizes="(max-width: 768px) 92vw, 1100px"
+                    priority
+                  />
+                </div>
+
+                <div className="work-lightbox-footer">
+                  <p className="work-lightbox-caption">
+                    {caseStudies[workLightboxIndex].label}
+                  </p>
+                  <p className="work-lightbox-counter">
+                    {workLightboxIndex + 1} / {totalWorks}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </main>
 
