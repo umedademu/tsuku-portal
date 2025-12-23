@@ -153,6 +153,7 @@ const sitemapLinks = [
   { label: "施工事例", href: "#works" },
   { label: "専門家紹介", href: "#expert-profile" },
 ];
+const footerHashtags = ["神奈川県", "東京都", "外構造成工事", "リフォーム", "自費工事"];
 const office = {
   address: "〒252-0237\n神奈川県相模原市\n中央区千代田1-3-13-2",
   contacts: [
@@ -705,6 +706,25 @@ export default function Home() {
               </div>
             </div>
           )}
+        </section>
+
+        <section className="section" aria-label="関連キーワード" style={{ padding: "40px 0 80px" }}>
+          <div className="container">
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "12px",
+                justifyContent: "center",
+              }}
+            >
+              {footerHashtags.map((keyword) => (
+                <span className="keyword-pill" key={keyword}>
+                  #{keyword}
+                </span>
+              ))}
+            </div>
+          </div>
         </section>
       </main>
 
