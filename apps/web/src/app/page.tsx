@@ -553,7 +553,7 @@ export default function Home() {
                   公共案件から住宅リフォームまで対応します。
                 </p>
                 <p className="expert-credentials">
-                  保有資格: 一級建築士 / 施工管理技士
+                  保有資格: 一級土木施工管理技士 / 一級管工事施工管理技士
                   <br />
                   実績: 戸建て・マンション改修、RC構造、公共案件 など
                 </p>
